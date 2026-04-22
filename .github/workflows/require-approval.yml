@@ -1,0 +1,39 @@
+name: Require Owner Approval
+
+on:
+  pull_request:
+    branches: [main]
+  pull_request_review:
+    branches: [main]
+
+jobs:
+  check-approval:
+    name: Owner must approve before merging
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for approval from @Shenoynoob
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = 'Shenoynoob';
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request
+                ? context.payload.pull_request.number
+                : context.payload.review.pull_request.number,
+            });
+
+            const approved = reviews.some(
+              (r) =>
+                r.state === 'APPROVED' &&
+                r.user.login.toLowerCase() === owner.toLowerCase()
+            );
+
+            if (!approved) {
+              core.setFailed(
+                `Merge blocked: @${owner} must approve this PR before it can be merged into main.`
+              );
+            } else {
+              core.info(`Approved by @${owner}. Good to merge.`);
+            }
