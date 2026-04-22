@@ -1,0 +1,357 @@
+// LearnNextDoor - Prisma schema (PostgreSQL, hosted on Supabase).
+// State fields are stored as strings (kept portable from our original SQLite schema; validated at the app layer).
+//
+// Two connection strings are used:
+//   DATABASE_URL → the PgBouncer pooler (port 6543) used by serverless runtime
+//   DIRECT_URL   → the direct connection (port 5432) used by `prisma db push` / `prisma migrate`
+
+generator client {
+  provider      = "prisma-client-js"
+  // rhel-openssl-3.0.x is what Vercel's Node runtime uses. "native" covers local dev on Mac/Linux.
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  phone             String?  @unique
+  email             String?  @unique
+  name              String?
+  role              String   @default("STUDENT") // STUDENT | PROVIDER | ADMIN
+  avatar            String?
+  suspended         Boolean  @default(false)
+  suspendedAt       DateTime?
+  suspensionReason  String?
+  createdAt         DateTime @default(now())
+
+  bookings      Booking[]
+  reviews       Review[]
+  sessions      AuthSession[]
+  notifications Notification[]
+  tickets       SupportTicket[]
+  provider      Provider?
+}
+
+model Provider {
+  id                 String    @id @default(cuid())
+  userId             String    @unique
+  user               User      @relation(fields: [userId], references: [id])
+  providerCode       String    @unique // e.g., P001
+  instituteName      String
+  bio                String?
+  area               String?
+  address            String?
+  upiId              String?
+  upiVerified        Boolean   @default(false)
+  kycStatus          String    @default("NOT_UPLOADED") // NOT_UPLOADED | PENDING | VERIFIED | REJECTED
+  kycDocType         String?
+  kycDocUrl          String?
+  kycSubmittedAt     DateTime?
+  kycVerifiedAt      DateTime?
+  kycRejectionReason String?
+  kycRevokedAt       DateTime?
+  createdAt          DateTime  @default(now())
+
+  classes       Class[]
+  instructors   Instructor[]
+  holidays      Holiday[]
+  settlements   Settlement[]
+  cancellations CancellationRequest[]
+}
+
+model Instructor {
+  id                 String   @id @default(cuid())
+  providerId         String
+  provider           Provider @relation(fields: [providerId], references: [id])
+  name               String
+  email              String?
+  phone              String?
+  specialty          String?
+  kycStatus          String   @default("NOT_UPLOADED")
+  kycDocType         String?
+  kycDocUrl          String?
+  kycSubmittedAt     DateTime?
+  kycVerifiedAt      DateTime?
+  kycRejectionReason String?
+  createdAt          DateTime @default(now())
+
+  batches Batch[]
+}
+
+model Class {
+  id               String    @id @default(cuid())
+  providerId       String
+  provider         Provider  @relation(fields: [providerId], references: [id])
+  title            String
+  description      String?
+  type             String    // REGULAR | COURSE | WORKSHOP
+  category         String
+  subcategory      String?
+  tagsCsv          String?
+  imagesCsv        String?
+  status           String    @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | ARCHIVED
+  liveStatus       String    @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | BLOCKED
+  liveSubmittedAt  DateTime  @default(now())
+  liveDecidedAt    DateTime?
+  liveDecidedBy    String?   // AdminUser.id
+  liveReason       String?   // rejection/block reason
+  startDate        DateTime?
+  durationWeeks    Int?
+  earlyBird        Boolean   @default(false)
+  rating           Float?
+  reviewsCount     Int       @default(0)
+  createdAt        DateTime  @default(now())
+
+  batches       Batch[]
+  reviews       Review[]
+  bookings      Booking[]
+  holidays      Holiday[]
+  cancellations CancellationRequest[]
+}
+
+model Batch {
+  id                String   @id @default(cuid())
+  classId           String
+  class             Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  instructorId      String?
+  instructor        Instructor? @relation(fields: [instructorId], references: [id])
+  name              String
+  classDaysCsv      String?  // "Mon,Wed,Fri"
+  fromTime          String   // "07:00"
+  toTime            String   // "08:00"
+  pricePer4Weeks    Int
+  maxStudents       Int
+  enrolled          Int      @default(0)
+  freeTrialEnabled  Boolean  @default(false)
+  freeTrialSessions Int      @default(0)
+  createdAt         DateTime @default(now())
+
+  bookings      Booking[]
+  holidays      Holiday[]
+  cancellations CancellationRequest[]
+}
+
+model Booking {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  classId       String
+  class         Class     @relation(fields: [classId], references: [id])
+  batchId       String
+  batch         Batch     @relation(fields: [batchId], references: [id])
+  mode          String    @default("ENROLL") // ENROLL | TRIAL
+  amount        Int       @default(0)
+  status        String    @default("CONFIRMED") // CONFIRMED | PENDING | CANCELLED | COMPLETED | REFUNDED
+  cancelledAt   DateTime?
+  extendedUntil DateTime? // new effective end date after holiday extension
+  refundAmount  Int       @default(0)
+  createdAt     DateTime  @default(now())
+
+  refund Refund?
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
+
+model Holiday {
+  id               String   @id @default(cuid())
+  providerId       String
+  provider         Provider @relation(fields: [providerId], references: [id])
+  classId          String?
+  class            Class?   @relation(fields: [classId], references: [id])
+  batchId          String?
+  batch            Batch?   @relation(fields: [batchId], references: [id])
+  date             DateTime
+  reason           String?
+  affectsAll       Boolean  @default(true) // true = all provider batches; false = scoped via classId/batchId
+  compensation     String   @default("EXTEND") // EXTEND | REFUND | NONE
+  sessionsAffected Int      @default(0)
+  createdAt        DateTime @default(now())
+}
+
+model CancellationRequest {
+  id               String    @id @default(cuid())
+  providerId       String
+  provider         Provider  @relation(fields: [providerId], references: [id])
+  classId          String
+  class            Class     @relation(fields: [classId], references: [id])
+  batchId          String?
+  batch            Batch?    @relation(fields: [batchId], references: [id])
+  scope            String    // WORKSHOP | COURSE | BATCH
+  reason           String
+  totalRefund      Int       @default(0)
+  affectedBookings Int       @default(0)
+  status           String    @default("PROCESSING") // PROCESSING | COMPLETED | FAILED
+  createdAt        DateTime  @default(now())
+  completedAt      DateTime?
+
+  refunds Refund[]
+}
+
+model Refund {
+  id             String   @id @default(cuid())
+  cancellationId String?
+  cancellation   CancellationRequest? @relation(fields: [cancellationId], references: [id])
+  bookingId      String   @unique
+  booking        Booking  @relation(fields: [bookingId], references: [id])
+  amount         Int
+  method         String   @default("ORIGINAL") // ORIGINAL | UPI | MANUAL
+  status         String   @default("QUEUED")   // QUEUED | PROCESSING | COMPLETED | FAILED
+  utr            String?
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+}
+
+model AuthSession {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  token      String   @unique
+  device     String?
+  location   String?
+  current    Boolean  @default(false)
+  lastActive DateTime @default(now())
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+}
+
+model SupportTicket {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id])
+  code           String   @unique
+  subject        String
+  category       String
+  message        String
+  imageUrl       String?
+  reply          String?
+  resolutionNote String?
+  resolvedAt     DateTime?
+  deleteAfter    DateTime? // set to resolvedAt + 7d on resolve
+  mergedIntoId   String?   // id of parent ticket this was merged into
+  status         String   @default("OPEN") // OPEN | RESOLVED | CLOSED | MERGED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Settlement {
+  id          String   @id @default(cuid())
+  providerId  String
+  provider    Provider @relation(fields: [providerId], references: [id])
+  code        String   @unique
+  periodStart DateTime
+  periodEnd   DateTime
+  gross       Int
+  commission  Int
+  net         Int
+  status      String   @default("PROCESSING") // PROCESSING | PENDING | PAID | FAILED | FUTURE
+  utr         String?
+  paidAt      DateTime?
+  paidBy      String?  // AdminUser.id
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model OtpCode {
+  id         String   @id @default(cuid())
+  identifier String
+  code       String
+  channel    String
+  role       String   @default("STUDENT")
+  expiresAt  DateTime
+  used       Boolean  @default(false)
+  attempts   Int      @default(0)
+  createdAt  DateTime @default(now())
+}
+
+// ============================================================================
+// Admin portal models
+// ============================================================================
+
+model AdminUser {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  email         String?  @unique
+  name          String
+  passwordHash  String
+  role          String   @default("ADMIN") // SUPER_ADMIN | ADMIN
+  status        String   @default("ACTIVE") // ACTIVE | SUSPENDED
+  mustChangePw  Boolean  @default(true)
+  lastLoginAt   DateTime?
+  createdAt     DateTime @default(now())
+  createdBy     String?  // AdminUser.id of the admin who created this account
+
+  sessions AdminSession[]
+}
+
+model AdminSession {
+  id         String   @id @default(cuid())
+  adminId    String
+  admin      AdminUser @relation(fields: [adminId], references: [id])
+  token      String   @unique
+  ip         String?
+  userAgent  String?
+  lastActive DateTime @default(now())
+  expiresAt  DateTime // absolute expiry
+  createdAt  DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorId     String   // AdminUser.id
+  actorName   String   // snapshot for durability (even after admin deletion)
+  actorRole   String   // SUPER_ADMIN | ADMIN
+  module      String   // KYC | LISTINGS | PAYMENTS | USERS | CONCERNS | SETTINGS | ...
+  action      String   // free-form verb, e.g., APPROVE_KYC, BLOCK_LISTING
+  entityType  String   // Provider | Class | User | SupportTicket | Settlement | Refund | AdminUser
+  entityId    String
+  beforeJson  String?  // JSON-stringified snapshot
+  afterJson   String?
+  reason      String?
+  ip          String?
+  createdAt   DateTime @default(now())
+
+  @@index([module, createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId, createdAt])
+}
+
+model EmailBlacklist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  reason    String?
+  addedBy   String?  // AdminUser.id
+  createdAt DateTime @default(now())
+}
+
+model PhoneBlacklist {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  reason    String?
+  addedBy   String?  // AdminUser.id
+  createdAt DateTime @default(now())
+}
