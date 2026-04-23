@@ -9,11 +9,13 @@ export function ProviderTopbar({
   instituteName,
   kycStatus,
   notifCount,
+  providerId,
 }: {
   name: string;
   instituteName: string;
   kycStatus: string;
   notifCount: number;
+  providerId: string;
 }) {
   return (
     <header className="flex h-16 items-center gap-4 border-b border-ink-800/5 bg-white px-5">
@@ -29,6 +31,13 @@ export function ProviderTopbar({
           className="hidden rounded-xl bg-white px-3 py-2 text-xs font-semibold text-ink-700 ring-1 ring-ink-800/10 hover:bg-surface-100 sm:inline-flex"
         >
           Exit Portal
+        </Link>
+        <Link
+          href={`/p/${providerId}`}
+          target="_blank"
+          className="hidden rounded-xl bg-brand-50 px-3 py-2 text-xs font-semibold text-brand-700 ring-1 ring-brand-200 hover:bg-brand-100 sm:inline-flex"
+        >
+          View Public Profile ↗
         </Link>
         <Link
           href="/provider/notifications"

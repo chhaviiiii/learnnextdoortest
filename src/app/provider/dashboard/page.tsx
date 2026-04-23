@@ -21,7 +21,7 @@ export default async function ProviderDashboard({
 }) {
   const { provider } = await requireProvider();
 
-  const [classes, bookings, settlements, reviews, instructors] = await Promise.all([
+  const [classes, bookings, reviews, instructors] = await Promise.all([
     prisma.class.findMany({
       where: { providerId: provider.id },
       include: { batches: true },
@@ -32,11 +32,6 @@ export default async function ProviderDashboard({
       include: { user: true, class: true },
       orderBy: { createdAt: "desc" },
       take: 6,
-    }),
-    prisma.settlement.findMany({
-      where: { providerId: provider.id },
-      orderBy: { createdAt: "desc" },
-      take: 3,
     }),
     prisma.review.findMany({
       where: { class: { providerId: provider.id } },
@@ -53,8 +48,6 @@ export default async function ProviderDashboard({
       status: { in: ["CONFIRMED", "COMPLETED"] },
     },
   });
-  const grossThisMonth = settlements.reduce((a, s) => a + s.gross, 0);
-  const netPayout = settlements.reduce((a, s) => a + s.net, 0);
   const avgRating =
     reviews.length > 0
       ? reviews.reduce((a, r) => a + r.rating, 0) / reviews.length
@@ -182,13 +175,7 @@ export default async function ProviderDashboard({
           trend={`${instructors} instructor${instructors === 1 ? "" : "s"}`}
           hue="accent"
         />
-        <Stat
-          icon={Wallet}
-          label="Gross this month"
-          value={formatINR(grossThisMonth)}
-          trend={`Net payout: ${formatINR(netPayout)}`}
-          hue="emerald"
-        />
+
         <Stat
           icon={Star}
           label="Average rating"
@@ -231,33 +218,7 @@ export default async function ProviderDashboard({
           )}
         </section>
 
-        {/* Payouts */}
-        <section className="card">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-bold text-ink-900">Recent payouts</h2>
-            <Link href="/provider/earnings" className="text-xs font-semibold text-brand-600 hover:text-brand-700">
-              View all →
-            </Link>
-          </div>
-          {settlements.length === 0 ? (
-            <p className="mt-4 text-sm text-ink-500">No settlements yet.</p>
-          ) : (
-            <div className="mt-4 space-y-3">
-              {settlements.map((s) => (
-                <div key={s.id} className="flex items-center justify-between rounded-xl bg-surface-100 px-3 py-2.5">
-                  <div>
-                    <div className="text-xs font-semibold text-ink-900">{s.code.toUpperCase()}</div>
-                    <div className="text-[11px] text-ink-500">{formatDate(s.createdAt)}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-ink-900">{formatINR(s.net)}</div>
-                    <div className="text-[11px] text-ink-500">{s.status}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+
       </div>
 
       {/* Classes quick list */}

@@ -4,6 +4,7 @@ import { Logo } from "./Logo";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/utils";
+import { LogoutButton } from "./LogoutButton";
 
 export async function StudentHeader({ query }: { query?: string } = {}) {
   const user = await getCurrentUser();
@@ -63,17 +64,25 @@ export async function StudentHeader({ query }: { query?: string } = {}) {
         </Link>
 
         {user ? (
-          <Link
-            href="/account"
-            className="inline-flex items-center gap-2 rounded-full bg-surface-100 py-1.5 pl-1.5 pr-3 hover:bg-surface-200"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-gradient text-[11px] font-bold text-white">
-              {initials(user.name ?? "You")}
-            </span>
-            <span className="text-sm font-semibold text-ink-800">
-              {(user.name ?? "You").split(" ")[0]}
-            </span>
-          </Link>
+          <div className="flex items-center gap-1">
+            <Link
+              href="/account"
+              className="inline-flex items-center gap-2 rounded-full bg-surface-100 py-1.5 pl-1.5 pr-3 hover:bg-surface-200"
+            >
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-gradient text-[11px] font-bold text-white">
+                {initials(user.name ?? "You")}
+              </span>
+              <span className="text-sm font-semibold text-ink-800">
+                {(user.name ?? "You").split(" ")[0]}
+              </span>
+            </Link>
+            <LogoutButton
+              showIcon
+              className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors"
+            >
+              <span className="hidden md:inline">Sign out</span>
+            </LogoutButton>
+          </div>
         ) : (
           <Link
             href="/login"

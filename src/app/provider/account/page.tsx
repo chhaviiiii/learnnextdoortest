@@ -31,6 +31,7 @@ export default async function AccountPage() {
         kycVerifiedAt: provider.kycVerifiedAt
           ? formatDate(provider.kycVerifiedAt, { day: "2-digit", month: "short", year: "numeric" })
           : null,
+        kycRejectionReason: provider.kycRejectionReason ?? null,
       }}
       sessions={sessions.map((s) => ({
         id: s.id,

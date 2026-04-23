@@ -21,8 +21,6 @@ const NAV = [
   { href: "/provider/classes/create", label: "Create a Class", icon: PlusSquare },
   { href: "/provider/instructors", label: "Manage Instructors", icon: Users },
   { href: "/provider/classes", label: "My Listed Classes", icon: BookOpen },
-  { href: "/provider/earnings", label: "Earnings & Payout", icon: Wallet },
-  { href: "/provider/holidays", label: "Holiday & Cancellation", icon: CalendarX2 },
   { href: "/provider/account", label: "My Account", icon: UserCircle2 },
   { href: "/provider/support", label: "Provider Support", icon: LifeBuoy },
   { href: "/provider/notifications", label: "Notifications", icon: Bell, countKey: "notif" as const },

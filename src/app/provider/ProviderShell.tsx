@@ -30,6 +30,7 @@ export async function ProviderShell({ children }: { children: React.ReactNode })
           instituteName={user.provider.instituteName}
           kycStatus={user.provider.kycStatus}
           notifCount={notifCount}
+          providerId={user.provider.id}
         />
         <main className="flex-1 p-6 md:p-8">{children}</main>
       </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Edit, Users, TrendingUp } from "lucide-react";
+import { Plus, Edit, ShieldAlert } from "lucide-react";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatINR, parseCsv, priceLabel } from "@/lib/utils";
@@ -14,6 +14,8 @@ export default async function ProviderClassesPage() {
     orderBy: { createdAt: "desc" },
   });
 
+  const kycVerified = provider.kycStatus === "VERIFIED";
+
   return (
     <div className="space-y-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
@@ -23,10 +25,36 @@ export default async function ProviderClassesPage() {
             {classes.length} class{classes.length === 1 ? "" : "es"} — manage visibility, batches and bookings.
           </p>
         </div>
-        <Link href="/provider/classes/create" className="btn-accent">
-          <Plus className="h-4 w-4" /> New class
-        </Link>
+        {kycVerified ? (
+          <Link href="/provider/classes/create" className="btn-accent">
+            <Plus className="h-4 w-4" /> New class
+          </Link>
+        ) : (
+          <Link href="/provider/account?kyc=required" className="btn-accent opacity-60 cursor-not-allowed pointer-events-none">
+            <Plus className="h-4 w-4" /> New class
+          </Link>
+        )}
       </header>
+
+      {/* KYC gate banner — shown when provider is not yet verified */}
+      {!kycVerified && (
+        <div className="flex items-start gap-4 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
+          <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-900">KYC verification required to list classes</p>
+            <p className="mt-1 text-sm text-amber-700">
+              {provider.kycStatus === "PENDING"
+                ? "Your documents are under review. You'll be able to create classes once our team approves your KYC."
+                : provider.kycStatus === "REJECTED"
+                ? `Your KYC was rejected. Reason: "${provider.kycRejectionReason ?? "See account page for details"}". Please resubmit.`
+                : "Upload a valid government ID to unlock class creation and start accepting bookings."}
+            </p>
+            <Link href="/provider/account?kyc=required" className="mt-3 inline-flex rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700">
+              Complete KYC →
+            </Link>
+          </div>
+        </div>
+      )}
 
       {classes.length === 0 ? (
         <div className="card text-center">

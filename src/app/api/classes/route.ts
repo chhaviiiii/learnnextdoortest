@@ -18,6 +18,11 @@ export async function POST(req: Request) {
     batches,
   } = body ?? {};
 
+  // Verified providers go live immediately; PENDING providers wait for admin KYC approval
+  const isVerified = provider.kycStatus === "VERIFIED";
+  const liveStatus = isVerified ? "APPROVED" : "PENDING_APPROVAL";
+  const liveDecidedAt = isVerified ? new Date() : null;
+
   if (!title || !type || !category) {
     return NextResponse.json({ error: "title, type and category are required" }, { status: 400 });
   }
@@ -41,6 +46,8 @@ export async function POST(req: Request) {
       startDate: startDate ? new Date(startDate) : null,
       durationWeeks: durationWeeks ?? null,
       status: "ACTIVE",
+      liveStatus,
+      liveDecidedAt,
       batches: {
         create: batches.map((b: any) => ({
           name: b.name || "Default batch",
