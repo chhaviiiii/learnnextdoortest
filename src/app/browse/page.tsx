@@ -35,7 +35,22 @@ export default async function BrowsePage({
           { title: { contains: q, mode: "insensitive" } },
           { description: { contains: q, mode: "insensitive" } },
           { category: { contains: q, mode: "insensitive" } },
+          { subcategory: { contains: q, mode: "insensitive" } },
           { tagsCsv: { contains: q, mode: "insensitive" } },
+          { provider: { instituteName: { contains: q, mode: "insensitive" } } },
+          { provider: { area: { contains: q, mode: "insensitive" } } },
+          { provider: { address: { contains: q, mode: "insensitive" } } },
+          {
+            batches: {
+              some: {
+                OR: [
+                  { name: { contains: q, mode: "insensitive" } },
+                  { classDaysCsv: { contains: q, mode: "insensitive" } },
+                  { instructor: { is: { name: { contains: q, mode: "insensitive" } } } },
+                ],
+              },
+            },
+          },
         ],
       }),
     },
@@ -45,10 +60,10 @@ export default async function BrowsePage({
 
   return (
     <>
-      <StudentHeader query={q} />
+      <StudentHeader query={q} category={category} type={type} />
 
-      <section className="mx-auto max-w-[1240px] px-6 py-8">
-        <h1 className="font-display text-3xl font-bold text-ink-900">Browse classes</h1>
+      <section className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 sm:py-8">
+        <h1 className="font-display text-2xl font-bold text-ink-900 sm:text-3xl">Browse classes</h1>
         <p className="mt-1 text-sm text-ink-500">
           {classes.length} {classes.length === 1 ? "class" : "classes"}
           {q ? ` matching "${q}"` : ""}
@@ -56,7 +71,7 @@ export default async function BrowsePage({
         </p>
 
         {/* filters */}
-        <div className="mt-6 space-y-3">
+        <div className="mt-5 space-y-3 sm:mt-6">
           <div className="flex flex-wrap gap-2">
             {TYPES.map((t) => (
               <FilterChip
@@ -85,7 +100,7 @@ export default async function BrowsePage({
         </div>
 
         {classes.length === 0 ? (
-          <div className="mt-10 rounded-3xl bg-white p-10 text-center ring-1 ring-ink-800/5">
+          <div className="mt-8 rounded-3xl bg-white p-6 text-center ring-1 ring-ink-800/5 sm:mt-10 sm:p-10">
             <div className="text-4xl">🔍</div>
             <h3 className="mt-3 font-display text-xl font-bold text-ink-900">
               No classes match your filters
@@ -94,7 +109,7 @@ export default async function BrowsePage({
             <Link href="/browse" className="btn-ghost mt-5 inline-flex">Clear all filters</Link>
           </div>
         ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="mt-6 grid gap-4 sm:mt-8 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
             {classes.map((c) => (
               <ClassCard key={c.id} cls={c as any} />
             ))}

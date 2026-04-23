@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { MapPin, Star, Clock, CalendarRange } from "lucide-react";
 import { TypePill, FreeTrialPill, EarlyBirdPill } from "./Pills";
 import { formatDate, parseCsv, priceLabel } from "@/lib/utils";
@@ -26,7 +25,6 @@ export function ClassCard({ cls }: ClassCardProps) {
   const primary = images[0] ?? fallbackImg(cls.category);
   const batch = cls.batches[0];
   const hasTrial = cls.batches.some((b) => b.freeTrialEnabled);
-  const spotsLeft = batch ? Math.max(0, batch.maxStudents - batch.enrolled) : null;
   const price = batch?.pricePer4Weeks ?? 0;
 
   return (
@@ -34,7 +32,7 @@ export function ClassCard({ cls }: ClassCardProps) {
       href={`/class/${cls.id}`}
       className="group block overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-ink-800/5 transition hover:-translate-y-0.5 hover:shadow-float"
     >
-      <div className="relative h-44 w-full overflow-hidden">
+      <div className="relative h-40 w-full overflow-hidden sm:h-44">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={primary} alt={cls.title} className="h-full w-full object-cover transition group-hover:scale-105" />
         <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
@@ -42,14 +40,9 @@ export function ClassCard({ cls }: ClassCardProps) {
           {hasTrial && <FreeTrialPill />}
           {cls.earlyBird && <EarlyBirdPill />}
         </div>
-        {spotsLeft !== null && spotsLeft <= 5 && (
-          <div className="absolute bottom-3 left-3 rounded-full bg-ink-900/75 px-3 py-1 text-[11px] font-semibold text-white backdrop-blur">
-            {spotsLeft === 0 ? "Sold out" : `${spotsLeft} spots left`}
-          </div>
-        )}
       </div>
 
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         <h3 className="font-display text-[17px] font-bold leading-snug text-ink-900 line-clamp-2">
           {cls.title}
         </h3>
