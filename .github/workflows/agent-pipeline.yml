@@ -1,0 +1,282 @@
+name: AI Agent Pipeline
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  agent-pipeline:
+    name: Multi-Agent Code Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Identify changed files
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            git fetch origin "$BASE_SHA" --depth=1 || true
+            CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" || true)
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD || true)
+          fi
+
+          # Keep only source .ts/.tsx/.js/.jsx files; exclude tests, node_modules, build output, and the agents.ts file itself.
+          FILTERED=$(echo "$CHANGED" | grep -E '\.(ts|tsx|js|jsx)$' \
+            | grep -vE '\.(test|spec)\.(ts|tsx|js|jsx)$' \
+            | grep -vE '(^|/)(node_modules|\.next|dist|build|coverage)/' \
+            | grep -v '^agents\.ts$' \
+            || true)
+
+          if [ -z "$FILTERED" ]; then
+            echo "No reviewable files changed."
+            echo "files=" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changed files:"
+            echo "$FILTERED"
+            # Store newline-separated list using delimiter syntax
+            {
+              echo "files<<EOF"
+              echo "$FILTERED"
+              echo "EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run agent pipeline on changed files
+        if: steps.changed.outputs.files != ''
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set +e
+          : > pipeline.log
+          : > pipeline-report.txt
+          FAIL=0
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            [ ! -f "$file" ] && echo "Skipping missing file: $file" && continue
+            echo "───────────────────────────────────────────"
+            echo "Running pipeline on: $file"
+            echo "───────────────────────────────────────────"
+            npx ts-node agents.ts "$file"
+            rc=$?
+            if [ $rc -ne 0 ]; then
+              echo "agents.ts exited with code $rc for $file"
+              FAIL=1
+            fi
+          done <<< "${{ steps.changed.outputs.files }}"
+          exit 0
+
+      - name: Check for HIGH severity security issues
+        if: steps.changed.outputs.files != ''
+        id: security_check
+        run: |
+          if [ ! -f pipeline-report.txt ]; then
+            echo "No pipeline-report.txt produced — skipping HIGH check."
+            echo "blocked=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if grep -q "HIGH" pipeline-report.txt; then
+            echo "HIGH severity security issues detected:"
+            grep -n "HIGH" pipeline-report.txt || true
+            echo "blocked=true" >> "$GITHUB_OUTPUT"
+            exit 1
+          else
+            echo "No HIGH severity issues found."
+            echo "blocked=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Append report to GitHub Step Summary
+        if: always() && steps.changed.outputs.files != ''
+        run: |
+          {
+            echo "## AI Agent Pipeline Report"
+            echo ""
+            echo "**Run:** \`${{ github.run_id }}\` • **Commit:** \`${{ github.sha }}\`"
+            echo ""
+            if [ -f pipeline-report.txt ]; then
+              echo "<details><summary>Full pipeline report</summary>"
+              echo ""
+              echo '```'
+              cat pipeline-report.txt
+              echo '```'
+              echo ""
+              echo "</details>"
+            else
+              echo "_No report generated._"
+            fi
+            if [ -f pipeline.log ]; then
+              echo ""
+              echo "<details><summary>Pipeline log (truncated)</summary>"
+              echo ""
+              echo '```'
+              tail -n 400 pipeline.log
+              echo '```'
+              echo ""
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Post or update PR comment with report
+        if: always() && github.event_name == 'pull_request' && steps.changed.outputs.files != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            const HEADER = '## AI Agent Pipeline Report';
+            const reportPath = 'pipeline-report.txt';
+            const logPath = 'pipeline.log';
+
+            let report = '_No report generated._';
+            if (fs.existsSync(reportPath)) {
+              report = fs.readFileSync(reportPath, 'utf8');
+              // GitHub comment body limit is ~65536 chars. Trim defensively.
+              if (report.length > 55000) {
+                report = report.slice(0, 55000) + '\n\n...[truncated]...';
+              }
+            }
+
+            let logTail = '';
+            if (fs.existsSync(logPath)) {
+              const full = fs.readFileSync(logPath, 'utf8');
+              const lines = full.split('\n');
+              logTail = lines.slice(-120).join('\n');
+              if (logTail.length > 8000) logTail = logTail.slice(-8000);
+            }
+
+            const blocked = '${{ steps.security_check.outputs.blocked }}' === 'true';
+            const status = blocked
+              ? ':x: **Merge blocked** — HIGH severity security issues detected.'
+              : ':white_check_mark: **No HIGH severity issues.**';
+
+            const body = [
+              HEADER,
+              '',
+              status,
+              '',
+              `**Run:** [\`${context.runId}\`](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) • **Commit:** \`${context.sha.slice(0,7)}\``,
+              '',
+              '<details><summary>Full pipeline report</summary>',
+              '',
+              '```',
+              report,
+              '```',
+              '',
+              '</details>',
+              '',
+              '<details><summary>Pipeline log (last 120 lines)</summary>',
+              '',
+              '```',
+              logTail || '(no log)',
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              per_page: 100,
+            });
+            const existing = comments.find(c =>
+              c.user && c.user.type === 'Bot' && c.body && c.body.startsWith(HEADER)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+              core.info(`Updated existing comment ${existing.id}`);
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+              core.info('Created new PR comment');
+            }
+
+      - name: Upload pipeline artifacts
+        if: always() && steps.changed.outputs.files != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-pipeline-report-${{ github.run_id }}
+          path: |
+            pipeline-report.txt
+            pipeline.log
+          if-no-files-found: ignore
+          retention-days: 14
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: agent-pipeline
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: npm run build
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "VERCEL_TOKEN not set — skipping deploy. Configure the production environment secrets to enable."
+            exit 0
+          fi
+          npm i -g vercel@latest
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+          vercel build --prod --token="$VERCEL_TOKEN"
+          vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
