@@ -18,7 +18,7 @@ export function StudentFooter() {
             <li><Link href="/browse" className="hover:text-ink-800">Browse classes</Link></li>
             <li><Link href="/browse?type=WORKSHOP" className="hover:text-ink-800">Workshops</Link></li>
             <li><Link href="/browse?type=COURSE" className="hover:text-ink-800">Courses</Link></li>
-            <li><Link href="/my-bookings" className="hover:text-ink-800">My bookings</Link></li>
+            {/* <li><Link href="/my-bookings" className="hover:text-ink-800">My bookings</Link></li> */}
           </ul>
         </div>
         <div>

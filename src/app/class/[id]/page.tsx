@@ -25,6 +25,12 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
   const hasTrial = cls.batches.some((b) => b.freeTrialEnabled);
   const tags = parseCsv(cls.tagsCsv);
   const lowest = cls.batches.length ? Math.min(...cls.batches.map((b) => b.pricePer4Weeks)) : 0;
+  const providerLocation = cls?.provider?.area;
+  const mapQuery = encodeURIComponent(
+    cls.provider.address ?? providerLocation ?? "Delhi",
+  );
+  const mapEmbedUrl = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+  const mapOpenUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   return (
     <>
@@ -264,6 +270,41 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                 {cls.provider.address ?? cls.provider.area ?? "Delhi"}
               </div>
             </div>
+
+            <div className="card mt-4 overflow-hidden p-0">
+              <div className="border-b border-ink-800/5 px-4 py-3">
+                {/* <div className="font-display text-base font-bold text-ink-900">Location</div> */}
+                <div className="mt-1 text-xs text-ink-500">Find this provider on map</div>
+              </div>
+
+              <div className="relative">
+                <iframe
+                  title={`Map for ${providerLocation ?? "Delhi"}`}
+                  src={mapEmbedUrl}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="h-56 w-full"
+                />
+
+                <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-[11px] font-semibold text-ink-800 ring-1 ring-ink-800/10 shadow-sm">
+                  <MapPin className="h-3.5 w-3.5 text-brand-600" />
+                  {providerLocation ?? "Delhi"}
+                </span>
+              </div>
+
+              <div className="px-4 py-3">
+                <a
+                  href={mapOpenUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  Open in Google Maps →
+                </a>
+              </div>
+            </div>
+
+
           </aside>
         </div>
       </section>
