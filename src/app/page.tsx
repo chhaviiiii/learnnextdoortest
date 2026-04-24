@@ -7,7 +7,6 @@ import { StudentFooter } from "@/components/StudentFooter";
 import { ClassCard } from "@/components/ClassCard";
 import { AssistantDrawer } from "@/components/AssistantDrawer";
 import { prisma } from "@/lib/prisma";
-import { CurrentLocationLogger } from "@/components/CurrentLocationLogger";
 
 const CATEGORIES = [
   { name: "Dance", emoji: "💃", hue: "from-pink-100 to-pink-50" },
@@ -33,7 +32,6 @@ export default async function HomePage() {
 
   return (
     <>
-      <CurrentLocationLogger />
       <StudentHeader />
 
       {/* Hero */}

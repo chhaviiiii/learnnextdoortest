@@ -72,11 +72,7 @@ export default async function BrowsePage({
       <StudentHeader query={q} />
 
       <section className="mx-auto max-w-[1240px] px-6 py-8">
-        {/*
-          Heading row: title + subtitle on the left, mobile-only filter
-          button pinned to the right. `FilterMobileButton` hides itself
-          on lg+ screens, so desktop users only see the sidebar.
-        */}
+        {/* Heading row: title + subtitle on the left, mobile-only filter button pinned to the right. `FilterMobileButton` hides itself on lg+ screens, so desktop users only see the sidebar. */}
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-display text-3xl font-bold text-ink-900">Browse classes</h1>

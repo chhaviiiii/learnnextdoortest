@@ -18,16 +18,16 @@ datasource db {
 }
 
 model User {
-  id                String   @id @default(cuid())
-  phone             String?  @unique
-  email             String?  @unique
-  name              String?
-  role              String   @default("STUDENT") // STUDENT | PROVIDER | ADMIN
-  avatar            String?
-  suspended         Boolean  @default(false)
-  suspendedAt       DateTime?
-  suspensionReason  String?
-  createdAt         DateTime @default(now())
+  id               String    @id @default(cuid())
+  phone            String?   @unique
+  email            String?   @unique
+  name             String?
+  role             String    @default("STUDENT") // STUDENT | PROVIDER | ADMIN
+  avatar           String?
+  suspended        Boolean   @default(false)
+  suspendedAt      DateTime?
+  suspensionReason String?
+  createdAt     DateTime  @default(now())
 
   bookings      Booking[]
   reviews       Review[]
@@ -65,76 +65,87 @@ model Provider {
 }
 
 model Instructor {
-  id                 String   @id @default(cuid())
+  id                 String    @id @default(cuid())
   providerId         String
-  provider           Provider @relation(fields: [providerId], references: [id])
+  provider           Provider  @relation(fields: [providerId], references: [id])
   name               String
   email              String?
   phone              String?
   specialty          String?
-  kycStatus          String   @default("NOT_UPLOADED")
+  kycStatus          String    @default("NOT_UPLOADED")
   kycDocType         String?
   kycDocUrl          String?
   kycSubmittedAt     DateTime?
   kycVerifiedAt      DateTime?
   kycRejectionReason String?
-  createdAt          DateTime @default(now())
+  createdAt          DateTime  @default(now())
 
   batches Batch[]
 }
 
+
+
 model Class {
-  id               String    @id @default(cuid())
-  providerId       String
-  provider         Provider  @relation(fields: [providerId], references: [id])
-  title            String
-  description      String?
-  type             String    // REGULAR | COURSE | WORKSHOP
-  category         String
-  subcategory      String?
-  tagsCsv          String?
-  imagesCsv        String?
-  status           String    @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | ARCHIVED
-  liveStatus       String    @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | BLOCKED
-  liveSubmittedAt  DateTime  @default(now())
-  liveDecidedAt    DateTime?
-  liveDecidedBy    String?   // AdminUser.id
-  liveReason       String?   // rejection/block reason
-  startDate        DateTime?
-  durationWeeks    Int?
-  earlyBird        Boolean   @default(false)
-  rating           Float?
-  reviewsCount     Int       @default(0)
-  createdAt        DateTime  @default(now())
+  id              String       @id @default(cuid())
+  providerId      String
+  provider        Provider     @relation(fields: [providerId], references: [id])
+  title           String
+  description     String?
+  type            String // REGULAR | COURSE | WORKSHOP
+  category        String
+  subcategory     String?
+  // categoryId      String?      // Relation with Category Table
+  // categoryRef     Category?    @relation("ClassCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  // subcategoryId   String?      // Relation with Sub-Category Table
+  // subcategoryRef  Subcategory? @relation("ClassSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  // broaderLocality String?      @db.VarChar(120)
+  tagsCsv         String?
+  imagesCsv       String?
+  status          String       @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | ARCHIVED
+  // freeTrial       Boolean      @default(false)
+  // trending        Boolean      @default(false)
+  liveStatus      String       @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | BLOCKED
+  liveSubmittedAt DateTime     @default(now())
+  liveDecidedAt   DateTime?
+  liveDecidedBy   String? // AdminUser.id
+  liveReason      String? // rejection/block reason
+  startDate       DateTime?
+  durationWeeks   Int?
+  earlyBird       Boolean      @default(false)
+  rating          Float?
+  reviewsCount    Int          @default(0)
+  createdAt       DateTime     @default(now())
 
   batches       Batch[]
   reviews       Review[]
   bookings      Booking[]
   holidays      Holiday[]
-  cancellations CancellationRequest[]
+  // carouselSlides CarouselSlide[]
+  cancellations  CancellationRequest[]
 }
 
 model Batch {
-  id                String   @id @default(cuid())
+  id                String      @id @default(cuid())
   classId           String
-  class             Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  class             Class       @relation(fields: [classId], references: [id], onDelete: Cascade)
   instructorId      String?
   instructor        Instructor? @relation(fields: [instructorId], references: [id])
   name              String
-  classDaysCsv      String?  // "Mon,Wed,Fri"
-  fromTime          String   // "07:00"
-  toTime            String   // "08:00"
+  classDaysCsv      String?   // "Mon,Wed,Fri"
+  fromTime          String    // "07:00"
+  toTime            String    // "08:00"
   pricePer4Weeks    Int
   maxStudents       Int
-  enrolled          Int      @default(0)
-  freeTrialEnabled  Boolean  @default(false)
-  freeTrialSessions Int      @default(0)
-  createdAt         DateTime @default(now())
+  enrolled          Int         @default(0)
+  freeTrialEnabled  Boolean     @default(false)
+  freeTrialSessions Int         @default(0)
+  createdAt         DateTime    @default(now())
 
   bookings      Booking[]
   holidays      Holiday[]
   cancellations CancellationRequest[]
 }
+
 
 model Booking {
   id            String    @id @default(cuid())
@@ -181,6 +192,108 @@ model Holiday {
   sessionsAffected Int      @default(0)
   createdAt        DateTime @default(now())
 }
+
+
+// model Category {
+//   id           String   @id @default(cuid())
+//   categoryCode String   @unique // e.g. CAT-001 (generated at app layer)
+//   name         String   @unique @db.VarChar(50)
+//   createdAt    DateTime @default(now())
+//   updatedAt    DateTime @updatedAt
+
+//   subcategories Subcategory[]
+//   classes       Class[]       @relation("ClassCategory")
+// }
+
+// model Subcategory {
+//   id              String   @id @default(cuid())
+//   subcategoryCode String   @unique // e.g. SUB-014 (generated at app layer)
+//   categoryId      String
+//   category        Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+//   name            String   @db.VarChar(75)
+//   createdAt       DateTime @default(now())
+//   updatedAt       DateTime @updatedAt
+
+//   classes Class[] @relation("ClassSubcategory")
+
+//   @@unique([categoryId, name])
+//   @@index([categoryId])
+// }
+
+// model CarouselSlide {
+//   id              String   @id @default(cuid())
+//   listingId       String?
+//   listing         Class?   @relation(fields: [listingId], references: [id], onDelete: SetNull)
+//   imageUrl        String
+//   className       String   @db.VarChar(120)
+//   broaderLocality String   @db.VarChar(120)
+//   tagFreeTrial    Boolean  @default(false)
+//   tagEarlyBird    Boolean  @default(false)
+//   tagTrending     Boolean  @default(false)
+//   isPublished     Boolean  @default(true)
+//   createdAt       DateTime @default(now())
+//   updatedAt       DateTime @updatedAt
+
+//   locations CarouselSlideLocation[]
+
+//   @@index([listingId])
+//   @@index([isPublished, updatedAt])
+// }
+
+// // To assign single slide at multiple locations
+// model CarouselSlideLocation {
+//   id           String        @id @default(cuid())
+//   slideId      String
+//   slide        CarouselSlide @relation(fields: [slideId], references: [id], onDelete: Cascade)
+//   locationType String        @default("PIN") // PIN | ALL_LOCATIONS | DEFAULT
+//   pinCode      String?       @db.VarChar(12)
+//   locationKey  String        // PIN:560001 | ALL | DEFAULT
+//   position     Int
+
+//   @@unique([locationKey, position])
+//   @@unique([slideId, locationKey])
+//   @@index([slideId])
+//   @@index([locationType, pinCode, position])
+// }
+
+// model Testimonial {
+//   id               String   @id @default(cuid())
+//   quoteText        String   @db.VarChar(300)
+//   reviewerName     String   @db.VarChar(120)
+//   reviewerPhotoUrl String?
+//   city             String?  @db.VarChar(120)
+//   classReference   String?  @db.VarChar(120)
+//   placement        String   @default("HOME") // HOME | ABOUT | BOTH
+//   isPublished      Boolean  @default(true)
+//   displayOrder     Int      @default(0)
+//   createdAt        DateTime @default(now())
+//   updatedAt        DateTime @updatedAt
+
+//   @@index([placement, isPublished])
+//   @@index([placement, displayOrder])
+// }
+
+model PlatformBankAccount {
+  id                     String  @id @default(cuid())
+  accountHolderName      String  @db.VarChar(120)
+  bankName               String  @db.VarChar(120)
+  accountNumberEncrypted String
+  accountNumberLast4     String  @db.VarChar(4)
+  ifscCode               String  @db.VarChar(11)
+  upiId                  String? @db.VarChar(100)
+  gstRegistrationNumber  String? @db.VarChar(20)
+
+  // Optional workflow metadata for gated update flow before final save.
+  changeStatus              String    @default("ACTIVE") // ACTIVE | PENDING_SUPER_ADMIN_CONFIRMATION
+  pendingRequestedByAdminId String? // AdminUser.id
+  pendingRequestedAt        DateTime?
+  pendingApprovalToken      String?
+  pendingApprovalExpiresAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 
 model CancellationRequest {
   id               String    @id @default(cuid())
@@ -229,10 +342,10 @@ model AuthSession {
 }
 
 model SupportTicket {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   userId         String
-  user           User     @relation(fields: [userId], references: [id])
-  code           String   @unique
+  user           User      @relation(fields: [userId], references: [id])
+  code           String    @unique
   subject        String
   category       String
   message        String
@@ -241,10 +354,10 @@ model SupportTicket {
   resolutionNote String?
   resolvedAt     DateTime?
   deleteAfter    DateTime? // set to resolvedAt + 7d on resolve
-  mergedIntoId   String?   // id of parent ticket this was merged into
-  status         String   @default("OPEN") // OPEN | RESOLVED | CLOSED | MERGED
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  mergedIntoId   String? // id of parent ticket this was merged into
+  status         String    @default("OPEN") // OPEN | RESOLVED | CLOSED | MERGED
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model Notification {
@@ -259,21 +372,21 @@ model Notification {
 }
 
 model Settlement {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   providerId  String
-  provider    Provider @relation(fields: [providerId], references: [id])
-  code        String   @unique
+  provider    Provider  @relation(fields: [providerId], references: [id])
+  code        String    @unique
   periodStart DateTime
   periodEnd   DateTime
   gross       Int
   commission  Int
   net         Int
-  status      String   @default("PROCESSING") // PROCESSING | PENDING | PAID | FAILED | FUTURE
+  status      String    @default("PROCESSING") // PROCESSING | PENDING | PAID | FAILED | FUTURE
   utr         String?
   paidAt      DateTime?
-  paidBy      String?  // AdminUser.id
+  paidBy      String? // AdminUser.id
   notes       String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime  @default(now())
 }
 
 model OtpCode {
@@ -293,47 +406,47 @@ model OtpCode {
 // ============================================================================
 
 model AdminUser {
-  id            String   @id @default(cuid())
-  username      String   @unique
-  email         String?  @unique
-  name          String
-  passwordHash  String
-  role          String   @default("ADMIN") // SUPER_ADMIN | ADMIN
-  status        String   @default("ACTIVE") // ACTIVE | SUSPENDED
-  mustChangePw  Boolean  @default(true)
-  lastLoginAt   DateTime?
-  createdAt     DateTime @default(now())
-  createdBy     String?  // AdminUser.id of the admin who created this account
+  id           String    @id @default(cuid())
+  username     String    @unique
+  email        String?   @unique
+  name         String
+  passwordHash String
+  role         String    @default("ADMIN") // SUPER_ADMIN | ADMIN
+  status       String    @default("ACTIVE") // ACTIVE | SUSPENDED
+  mustChangePw Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  createdBy    String? // AdminUser.id of the admin who created this account
 
   sessions AdminSession[]
 }
 
 model AdminSession {
-  id         String   @id @default(cuid())
+  id         String    @id @default(cuid())
   adminId    String
   admin      AdminUser @relation(fields: [adminId], references: [id])
-  token      String   @unique
+  token      String    @unique
   ip         String?
   userAgent  String?
-  lastActive DateTime @default(now())
+  lastActive DateTime  @default(now())
   expiresAt  DateTime // absolute expiry
-  createdAt  DateTime @default(now())
+  createdAt  DateTime  @default(now())
 }
 
 model AuditLog {
-  id          String   @id @default(cuid())
-  actorId     String   // AdminUser.id
-  actorName   String   // snapshot for durability (even after admin deletion)
-  actorRole   String   // SUPER_ADMIN | ADMIN
-  module      String   // KYC | LISTINGS | PAYMENTS | USERS | CONCERNS | SETTINGS | ...
-  action      String   // free-form verb, e.g., APPROVE_KYC, BLOCK_LISTING
-  entityType  String   // Provider | Class | User | SupportTicket | Settlement | Refund | AdminUser
-  entityId    String
-  beforeJson  String?  // JSON-stringified snapshot
-  afterJson   String?
-  reason      String?
-  ip          String?
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  actorId    String // AdminUser.id
+  actorName  String // snapshot for durability (even after admin deletion)
+  actorRole  String // SUPER_ADMIN | ADMIN
+  module     String // KYC | LISTINGS | PAYMENTS | USERS | CONCERNS | SETTINGS | ...
+  action     String // free-form verb, e.g., APPROVE_KYC, BLOCK_LISTING
+  entityType String // Provider | Class | User | SupportTicket | Settlement | Refund | AdminUser
+  entityId   String
+  beforeJson String? // JSON-stringified snapshot
+  afterJson  String?
+  reason     String?
+  ip         String?
+  createdAt  DateTime @default(now())
 
   @@index([module, createdAt])
   @@index([entityType, entityId])
@@ -344,7 +457,7 @@ model EmailBlacklist {
   id        String   @id @default(cuid())
   email     String   @unique
   reason    String?
-  addedBy   String?  // AdminUser.id
+  addedBy   String? // AdminUser.id
   createdAt DateTime @default(now())
 }
 
@@ -352,6 +465,6 @@ model PhoneBlacklist {
   id        String   @id @default(cuid())
   phone     String   @unique
   reason    String?
-  addedBy   String?  // AdminUser.id
+  addedBy   String? // AdminUser.id
   createdAt DateTime @default(now())
 }
