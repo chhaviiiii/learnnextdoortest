@@ -8,11 +8,17 @@ export function BookClassForm({
   batches,
   loggedIn,
   classType,
+  classTitle,
+  providerName,
+  providerPhone,
 }: {
   classId: string;
   batches: { id: string; name: string; price: number; free: boolean; spots: number }[];
   loggedIn: boolean;
   classType: string;
+  classTitle: string;
+  providerName: string;
+  providerPhone?: string | null;
 }) {
   const [batchId, setBatchId] = useState<string>(batches[0]?.id ?? "");
   const [mode, setMode] = useState<"TRIAL" | "ENROLL">(
@@ -23,6 +29,7 @@ export function BookClassForm({
   const router = useRouter();
 
   const batch = batches.find((b) => b.id === batchId);
+  const whatsappUrl = buildWhatsAppUrl(providerPhone, classTitle, providerName, batch?.name);
 
   async function book() {
     if (!batch) return;
@@ -50,11 +57,17 @@ export function BookClassForm({
   if (!loggedIn) {
     return (
       <div className="mt-4 space-y-2">
-        <Link href="/login?redirect=/class/" className="btn-accent w-full">
-          Login to book
-        </Link>
+        {whatsappUrl ? (
+          <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn-accent w-full">
+            Enquire on WhatsApp
+          </a>
+        ) : (
+          <Link href="/login?redirect=/class/" className="btn-accent w-full">
+            Enquire on WhatsApp
+          </Link>
+        )}
         <p className="text-center text-xs text-ink-500">
-          New here? Your account is created automatically after login.
+          No login needed. Message the provider directly and we will help you choose the right batch.
         </p>
       </div>
     );
@@ -116,4 +129,24 @@ export function BookClassForm({
       </p>
     </div>
   );
+}
+
+function buildWhatsAppUrl(
+  phone?: string | null,
+  classTitle?: string,
+  providerName?: string,
+  batchName?: string,
+) {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, "");
+  if (!digits) return null;
+
+  const messageParts = [
+    `Hi, I am interested in ${classTitle ?? "this class"} on LearnNextDoor.`,
+    providerName ? `I saw your listing from ${providerName}.` : null,
+    batchName ? `Please share details for the ${batchName} batch.` : null,
+    "Please share timings, fees, location and trial details.",
+  ].filter(Boolean);
+
+  return `https://wa.me/${digits}?text=${encodeURIComponent(messageParts.join(" "))}`;
 }

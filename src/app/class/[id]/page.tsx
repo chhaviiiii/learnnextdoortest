@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { MapPin, Star, Clock, CalendarRange, BadgeCheck, User, Users } from "lucide-react";
+import { MapPin, Star, Clock, CalendarRange, BadgeCheck, User } from "lucide-react";
 import { StudentHeader } from "@/components/StudentHeader";
 import { StudentFooter } from "@/components/StudentFooter";
 import { TypePill, FreeTrialPill, EarlyBirdPill, KycPill } from "@/components/Pills";
@@ -53,9 +53,9 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
     <>
       <StudentHeader />
 
-      <section className="mx-auto max-w-[1240px] px-6 py-8">
+      <section className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 sm:py-8">
         {/* breadcrumbs */}
-        <nav className="mb-4 text-xs text-ink-500">
+        <nav className="mb-4 hidden text-xs text-ink-500 sm:block">
           <Link href="/" className="hover:text-ink-800">Home</Link>
           <span className="mx-1">/</span>
           <Link href="/browse" className="hover:text-ink-800">Browse</Link>
@@ -65,9 +65,9 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
           <span className="text-ink-800">{cls.title}</span>
         </nav>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-8">
           {/* LEFT */}
-          <div>
+          <div className="order-2 lg:order-1">
             <div className="relative overflow-hidden rounded-3xl ring-1 ring-ink-800/5">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={primary} alt={cls.title} className="aspect-[16/9] w-full object-cover" />
@@ -79,7 +79,7 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
             </div>
 
             {images.length > 1 && (
-              <div className="mt-3 grid grid-cols-4 gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {images.slice(0, 4).map((img, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -92,7 +92,7 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               </div>
             )}
 
-            <h1 className="mt-6 font-display text-3xl font-extrabold text-ink-900 md:text-4xl">
+            <h1 className="mt-5 font-display text-2xl font-extrabold text-ink-900 sm:mt-6 sm:text-3xl md:text-4xl">
               {cls.title}
             </h1>
 
@@ -137,9 +137,9 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               </h2>
               <div className="mt-4 space-y-3">
                 {cls.batches.map((b) => {
-                  const spotsLeft = Math.max(0, b.maxStudents - b.enrolled);
+                  // const spotsLeft = Math.max(0, b.maxStudents - b.enrolled);
                   return (
-                    <div key={b.id} className="card flex flex-wrap items-center justify-between gap-4">
+                    <div key={b.id} className="card flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
                       <div>
                         <div className="font-display text-base font-bold text-ink-900">
                           {b.name}
@@ -151,9 +151,9 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                           <span className="inline-flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" /> {b.fromTime} – {b.toTime}
                           </span>
-                          <span className="inline-flex items-center gap-1">
+                          {/* <span className="inline-flex items-center gap-1">
                             <Users className="h-3.5 w-3.5" /> {spotsLeft} of {b.maxStudents} spots left
-                          </span>
+                          </span> */}
                           {b.instructor && (
                             <span className="inline-flex items-center gap-1">
                               <User className="h-3.5 w-3.5" /> {b.instructor.name}
@@ -226,7 +226,7 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
           </div>
 
           {/* RIGHT — booking panel */}
-          <aside className="lg:sticky lg:top-24 lg:self-start">
+          <aside className="order-1 lg:order-2 lg:sticky lg:top-24 lg:self-start">
             <div className="card">
               <div className="flex items-baseline justify-between">
                 <div>
@@ -255,6 +255,9 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                 }))}
                 loggedIn={!!user}
                 classType={cls.type}
+                classTitle={cls.title}
+                providerName={cls.provider.instituteName}
+                providerPhone={cls.provider.user.phone}
               />
             </div>
 

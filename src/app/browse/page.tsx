@@ -49,7 +49,22 @@ export default async function BrowsePage({
           { title: { contains: q, mode: "insensitive" } },
           { description: { contains: q, mode: "insensitive" } },
           { category: { contains: q, mode: "insensitive" } },
+          { subcategory: { contains: q, mode: "insensitive" } },
           { tagsCsv: { contains: q, mode: "insensitive" } },
+          { provider: { instituteName: { contains: q, mode: "insensitive" } } },
+          { provider: { area: { contains: q, mode: "insensitive" } } },
+          { provider: { address: { contains: q, mode: "insensitive" } } },
+          {
+            batches: {
+              some: {
+                OR: [
+                  { name: { contains: q, mode: "insensitive" } },
+                  { classDaysCsv: { contains: q, mode: "insensitive" } },
+                  { instructor: { is: { name: { contains: q, mode: "insensitive" } } } },
+                ],
+              },
+            },
+          },
         ],
       }),
     },
@@ -69,13 +84,12 @@ export default async function BrowsePage({
 
   return (
     <>
-      <StudentHeader query={q} />
+      <StudentHeader query={q} category={category} type={type} />
 
-      <section className="mx-auto max-w-[1240px] px-6 py-8">
-        {/* Heading row: title + subtitle on the left, mobile-only filter button pinned to the right. `FilterMobileButton` hides itself on lg+ screens, so desktop users only see the sidebar. */}
+      <section className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="font-display text-3xl font-bold text-ink-900">Browse classes</h1>
+            <h1 className="font-display text-2xl font-bold text-ink-900 sm:text-3xl">Browse classes</h1>
             <p className="mt-1 text-sm text-ink-500">
               {countLabel}
               {q ? ` matching "${q}"` : ""}
@@ -86,12 +100,12 @@ export default async function BrowsePage({
 
         <FilterMobileButton types={TYPES} categories={CATEGORIES} />
 
-        <div className="mt-6 grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div className="mt-5 grid gap-6 sm:mt-6 lg:grid-cols-[260px_minmax(0,1fr)]">
           <FilterSidebar types={TYPES} categories={CATEGORIES} />
 
           <div>
             {sorted.length === 0 ? (
-              <div className="rounded-3xl bg-white p-10 text-center ring-1 ring-ink-800/5">
+              <div className="mt-2 rounded-3xl bg-white p-6 text-center ring-1 ring-ink-800/5 sm:p-10">
                 <div className="text-4xl">🔍</div>
                 <h3 className="mt-3 font-display text-xl font-bold text-ink-900">
                   No classes match your filters
@@ -104,7 +118,7 @@ export default async function BrowsePage({
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
                 {sorted.map((c) => (
                   <ClassCard key={c.id} cls={c as any} />
                 ))}

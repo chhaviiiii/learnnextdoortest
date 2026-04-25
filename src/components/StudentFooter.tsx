@@ -3,8 +3,8 @@ import { Logo } from "./Logo";
 
 export function StudentFooter() {
   return (
-    <footer className="mt-24 border-t border-ink-800/5 bg-white">
-      <div className="mx-auto grid max-w-[1240px] gap-10 px-6 py-12 md:grid-cols-4">
+    <footer className="mt-16 border-t border-ink-800/5 bg-white sm:mt-24">
+      <div className="mx-auto grid max-w-[1240px] gap-8 px-4 py-10 sm:px-6 sm:py-12 md:grid-cols-4 md:gap-10">
         <div className="space-y-3">
           <Logo />
           <p className="text-sm text-ink-500">
