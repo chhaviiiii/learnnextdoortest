@@ -84,7 +84,7 @@ export default async function BrowsePage({
 
   return (
     <>
-      <StudentHeader query={q} category={category} type={type} />
+      <StudentHeader query={q} category={rawCategories} type={type} />
 
       <section className="mx-auto max-w-[1240px] px-4 py-6 sm:px-6 sm:py-8">
         <div className="flex items-start justify-between gap-4">
