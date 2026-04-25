@@ -1,9 +1,16 @@
 import { requireProvider } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CreateClassWizard } from "./CreateClassWizard";
 
 export default async function CreateClassPage() {
   const { provider } = await requireProvider();
+
+  // KYC gate: providers must have submitted documents (PENDING or VERIFIED) to create classes.
+  // NOT_UPLOADED or REJECTED providers are blocked until they upload valid documents.
+  if (provider.kycStatus === "NOT_UPLOADED" || provider.kycStatus === "REJECTED") {
+    redirect("/provider/account?kyc=required");
+  }
   const instructors = await prisma.instructor.findMany({
     where: { providerId: provider.id },
     orderBy: { name: "asc" },

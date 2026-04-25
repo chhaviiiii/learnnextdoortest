@@ -1,8 +1,13 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { LoginForm } from "@/app/login/LoginForm";
 import { Logo } from "@/components/Logo";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function ProviderLoginPage() {
+export default async function ProviderLoginPage() {
+  const user = await getCurrentUser();
+  if (user?.provider) redirect("/provider/dashboard");
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-brand-50 via-surface-100 to-accent-50/40">
       <div className="mx-auto flex min-h-screen max-w-[1080px] items-center justify-center px-6 py-12">

@@ -9,7 +9,8 @@ dist
 .DS_Store
 prisma/dev.db
 prisma/dev.db-journal
-public/uploads
+public/uploads/
+scratch.ts
 .vercel
 .env*.local
 .claude/

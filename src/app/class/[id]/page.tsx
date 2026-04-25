@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Star, Clock, CalendarRange, BadgeCheck, User, Users } from "lucide-react";
 import { StudentHeader } from "@/components/StudentHeader";
@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { formatDate, formatINR, parseCsv, priceLabel, initials } from "@/lib/utils";
 import { getCurrentUser } from "@/lib/auth";
 import { BookClassForm } from "./BookClassForm";
+import { ReviewForm } from "./ReviewForm";
 
 export default async function ClassPage({ params }: { params: { id: string } }) {
   const cls = await prisma.class.findUnique({
@@ -19,7 +20,23 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
     },
   });
   if (!cls) return notFound();
+  
   const user = await getCurrentUser();
+  if (!user) {
+    redirect(`/login?redirect=/class/${params.id}`);
+  }
+
+  // Check if this user has an active booking and hasn't reviewed yet
+  const [userBooking, userReview] = await Promise.all([
+    prisma.booking.findFirst({
+      where: { userId: user.id, classId: cls.id, status: { in: ["CONFIRMED", "COMPLETED", "PENDING"] } },
+    }),
+    prisma.review.findFirst({
+      where: { userId: user.id, classId: cls.id },
+    }),
+  ]);
+  const canReview = !!userBooking && !userReview;
+
   const images = parseCsv(cls.imagesCsv);
   const primary = images[0] ?? "https://images.unsplash.com/photo-1513258496099-48168024aec0?w=1600";
   const hasTrial = cls.batches.some((b) => b.freeTrialEnabled);
@@ -169,8 +186,10 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               <h2 className="font-display text-xl font-bold text-ink-900">
                 Reviews ({cls.reviewsCount})
               </h2>
+              {/* Show the review form if user has booked but not yet reviewed */}
+              {canReview && <ReviewForm classId={cls.id} />}
               {cls.reviews.length === 0 ? (
-                <p className="mt-2 text-sm text-ink-500">Be the first to review after your class!</p>
+                <p className="mt-4 text-sm text-ink-500">Be the first to review after your class!</p>
               ) : (
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   {cls.reviews.map((r) => (
@@ -234,7 +253,7 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
             </div>
 
             {/* Provider card */}
-            <div className="card mt-4">
+            <Link href={`/p/${cls.provider.id}`} className="card mt-4 block hover:shadow-md transition">
               <div className="flex items-center gap-3">
                 <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient text-base font-bold text-white">
                   {initials(cls.provider.instituteName)}
@@ -263,7 +282,7 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                 <MapPin className="mr-1 inline-block h-3 w-3" />
                 {cls.provider.address ?? cls.provider.area ?? "Delhi"}
               </div>
-            </div>
+            </Link>
           </aside>
         </div>
       </section>
