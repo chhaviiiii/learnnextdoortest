@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Poppins } from "next/font/google";
 import "./globals.css";
+import { CurrentLocationProvider } from "@/store/currentlocation";
 
 const inter = Inter({
   subsets: ["latin"],

@@ -42,6 +42,12 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
   const hasTrial = cls.batches.some((b) => b.freeTrialEnabled);
   const tags = parseCsv(cls.tagsCsv);
   const lowest = cls.batches.length ? Math.min(...cls.batches.map((b) => b.pricePer4Weeks)) : 0;
+  const providerLocation = cls?.provider?.area;
+  const validAddress = cls?.provider?.address && cls.provider.address !== "..." ? cls.provider.address : null;
+  const mapQuery = encodeURIComponent(validAddress ?? providerLocation ?? "Delhi");
+
+  const mapEmbedUrl = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
+  const mapOpenUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   return (
     <>
@@ -283,6 +289,26 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                 {cls.provider.address ?? cls.provider.area ?? "Delhi"}
               </div>
             </Link>
+
+            {/* Provider location section */}
+            <div className="card mt-4 overflow-hidden p-0">
+              <div className="relative">
+                <iframe
+                  title={`Map for ${providerLocation ?? "Delhi"}`}
+                  src={mapEmbedUrl}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  className="h-56 w-full"
+                />
+              </div>
+
+              <div className="px-2 py-3">
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-sm font-semibold text-ink-800">
+                  <MapPin className="h-4 w-4 text-brand-600" />
+                  {providerLocation ?? "Delhi"}
+                </span>
+              </div>
+            </div>
           </aside>
         </div>
       </section>

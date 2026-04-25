@@ -1,3 +1,5 @@
+// "use client";
+
 import Link from "next/link";
 import { Search, ShieldCheck, Sparkles, MapPin, Users, Star, ArrowRight } from "lucide-react";
 import { StudentHeader } from "@/components/StudentHeader";

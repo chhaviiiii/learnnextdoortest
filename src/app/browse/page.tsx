@@ -2,9 +2,9 @@ import { StudentHeader } from "@/components/StudentHeader";
 import { StudentFooter } from "@/components/StudentFooter";
 import { ClassCard } from "@/components/ClassCard";
 import { AssistantDrawer } from "@/components/AssistantDrawer";
+import { FilterSidebar, FilterMobileButton } from "@/components/FilterSidebar";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 
 const TYPES = [
   { value: "", label: "All types" },
@@ -15,21 +15,35 @@ const TYPES = [
 
 const CATEGORIES = ["Dance", "Music", "Art", "Coding", "Yoga", "Cooking", "Fitness", "Chess"];
 
+type SortKey = "" | "distance" | "price_asc" | "price_desc";
+
 export default async function BrowsePage({
   searchParams,
 }: {
-  searchParams?: { q?: string; category?: string; type?: string };
+  searchParams?: {
+    q?: string;
+    category?: string;
+    type?: string;
+    sort?: string;
+  };
 }) {
   const q = (searchParams?.q ?? "").trim();
-  const category = searchParams?.category ?? "";
   const type = searchParams?.type ?? "";
+  const sort = (searchParams?.sort ?? "") as SortKey;
+
+  // Support both ?categories=A,B (new, multi) and the legacy ?category=A.
+  const rawCategories = searchParams?.category ?? "";
+  const selectedCategories = rawCategories
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const classes = await prisma.class.findMany({
     where: {
       status: "ACTIVE",
       liveStatus: "APPROVED",
       ...(type && { type }),
-      ...(category && { category }),
+      ...(selectedCategories.length > 0 && { category: { in: selectedCategories } }),
       ...(q && {
         OR: [
           { title: { contains: q, mode: "insensitive" } },
@@ -43,63 +57,61 @@ export default async function BrowsePage({
     orderBy: { createdAt: "desc" },
   });
 
+  const sorted = applySort(classes, sort);
+
+  const countLabel = `${sorted.length} ${sorted.length === 1 ? "class" : "classes"}`;
+  const categoryLabel =
+    selectedCategories.length === 1
+      ? ` in ${selectedCategories[0]}`
+      : selectedCategories.length > 1
+        ? ` across ${selectedCategories.length} categories`
+        : "";
+
   return (
     <>
       <StudentHeader query={q} />
 
       <section className="mx-auto max-w-[1240px] px-6 py-8">
-        <h1 className="font-display text-3xl font-bold text-ink-900">Browse classes</h1>
-        <p className="mt-1 text-sm text-ink-500">
-          {classes.length} {classes.length === 1 ? "class" : "classes"}
-          {q ? ` matching "${q}"` : ""}
-          {category ? ` in ${category}` : ""}
-        </p>
-
-        {/* filters */}
-        <div className="mt-6 space-y-3">
-          <div className="flex flex-wrap gap-2">
-            {TYPES.map((t) => (
-              <FilterChip
-                key={t.value}
-                href={buildHref({ q, category, type: t.value })}
-                active={type === t.value}
-                label={t.label}
-              />
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <FilterChip
-              href={buildHref({ q, type, category: "" })}
-              active={!category}
-              label="All categories"
-            />
-            {CATEGORIES.map((c) => (
-              <FilterChip
-                key={c}
-                href={buildHref({ q, type, category: c })}
-                active={category === c}
-                label={c}
-              />
-            ))}
+        {/* Heading row: title + subtitle on the left, mobile-only filter button pinned to the right. `FilterMobileButton` hides itself on lg+ screens, so desktop users only see the sidebar. */}
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl font-bold text-ink-900">Browse classes</h1>
+            <p className="mt-1 text-sm text-ink-500">
+              {countLabel}
+              {q ? ` matching "${q}"` : ""}
+              {categoryLabel}
+            </p>
           </div>
         </div>
 
-        {classes.length === 0 ? (
-          <div className="mt-10 rounded-3xl bg-white p-10 text-center ring-1 ring-ink-800/5">
-            <div className="text-4xl">🔍</div>
-            <h3 className="mt-3 font-display text-xl font-bold text-ink-900">
-              No classes match your filters
-            </h3>
-            <p className="mt-1 text-sm text-ink-500">Try clearing filters or searching something else.</p>
-            <Link href="/browse" className="btn-ghost mt-5 inline-flex">Clear all filters</Link>
+        <FilterMobileButton types={TYPES} categories={CATEGORIES} />
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <FilterSidebar types={TYPES} categories={CATEGORIES} />
+
+          <div>
+            {sorted.length === 0 ? (
+              <div className="rounded-3xl bg-white p-10 text-center ring-1 ring-ink-800/5">
+                <div className="text-4xl">🔍</div>
+                <h3 className="mt-3 font-display text-xl font-bold text-ink-900">
+                  No classes match your filters
+                </h3>
+                <p className="mt-1 text-sm text-ink-500">
+                  Try clearing filters or searching something else.
+                </p>
+                <Link href="/browse" className="btn-ghost mt-5 inline-flex">
+                  Clear all filters
+                </Link>
+              </div>
+            ) : (
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {sorted.map((c) => (
+                  <ClassCard key={c.id} cls={c as any} />
+                ))}
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {classes.map((c) => (
-              <ClassCard key={c.id} cls={c as any} />
-            ))}
-          </div>
-        )}
+        </div>
       </section>
 
       <StudentFooter />
@@ -108,27 +120,35 @@ export default async function BrowsePage({
   );
 }
 
-function buildHref(p: { q?: string; category?: string; type?: string }) {
-  const s = new URLSearchParams();
-  if (p.q) s.set("q", p.q);
-  if (p.category) s.set("category", p.category);
-  if (p.type) s.set("type", p.type);
-  const str = s.toString();
-  return `/browse${str ? "?" + str : ""}`;
+
+// Type-safe shape used by sorting helpers (batches + provider area).
+type ClassWithRelations = Awaited<ReturnType<typeof prisma.class.findMany>>[number] & {
+  batches: { pricePer4Weeks: number }[];
+  provider: { area: string | null };
+};
+
+
+// Returns the lowest batch price for a class; Infinity if no batches exist.
+function minPrice(c: ClassWithRelations) {
+  if (!c.batches?.length) return Number.POSITIVE_INFINITY;
+  return Math.min(...c.batches.map((b) => b.pricePer4Weeks ?? Number.POSITIVE_INFINITY));
 }
 
-function FilterChip({ href, active, label }: { href: string; active: boolean; label: string }) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "rounded-full px-4 py-1.5 text-xs font-semibold ring-1 transition",
-        active
-          ? "bg-ink-800 text-white ring-ink-800"
-          : "bg-white text-ink-700 ring-ink-800/10 hover:bg-surface-100",
-      )}
-    >
-      {label}
-    </Link>
-  );
+// Applies selected sort without mutating the original list.
+function applySort<T extends ClassWithRelations>(rows: T[], sort: SortKey): T[] {
+  if (!sort) return rows;
+  const copy = [...rows];
+  switch (sort) {
+    case "price_asc":
+      return copy.sort((a, b) => minPrice(a) - minPrice(b));
+    case "price_desc":
+      return copy.sort((a, b) => minPrice(b) - minPrice(a));
+    case "distance":
+      // We don't have geolocation yet; approximate "nearest" by grouping providers in the same area together (stable, deterministic).
+      return copy.sort((a, b) =>
+        (a.provider.area ?? "zzz").localeCompare(b.provider.area ?? "zzz"),
+      );
+    default:
+      return rows;
+  }
 }
