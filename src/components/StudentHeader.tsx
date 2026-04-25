@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { ShoppingBag, Home, Grid3X3, User, Store } from "lucide-react";
+import { Home, Grid3X3, User, Store } from "lucide-react";
 import { Logo } from "./Logo";
 import { SearchForm } from "./SearchForm";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { initials } from "@/lib/utils";
+import { StudentMenuDrawer } from "./AssistantDrawer";
 
 export async function StudentHeader({
   query,
@@ -16,15 +17,15 @@ export async function StudentHeader({
   type?: string;
 } = {}) {
   const user = await getCurrentUser();
-  const bookingCount = user
-    ? await prisma.booking.count({
-        where: { userId: user.id, status: { in: ["CONFIRMED", "PENDING"] } },
-      })
-    : 0;
+  // const bookingCount = user
+  //   ? await prisma.booking.count({
+  //       where: { userId: user.id, status: { in: ["CONFIRMED", "PENDING"] } },
+  //     })
+  //   : 0;
 
   return (
     <header className="sticky top-0 z-40 border-b border-ink-800/5 bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-[1240px] flex-wrap items-center gap-3 px-4 py-3 md:h-16 md:flex-nowrap md:gap-4 md:px-6 md:py-0">
+      <div className="mx-auto flex justify-between max-w-[1240px] flex-wrap items-center gap-3 px-4 py-3 md:h-16 md:flex-nowrap md:gap-4 md:px-6 md:py-0">
         <Logo />
 
         <SearchForm query={query} category={category} type={type} />
@@ -50,7 +51,7 @@ export async function StudentHeader({
           </Link>
         </nav>
 
-        <Link
+        {/* <Link
           href="/my-bookings"
           className="relative ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface-100 text-ink-700 hover:bg-surface-200 md:ml-0"
           aria-label="My bookings"
@@ -61,20 +62,21 @@ export async function StudentHeader({
               {bookingCount}
             </span>
           )}
-        </Link>
+        </Link> */}
 
         {user ? (
-          <Link
-            href="/account"
-            className="inline-flex items-center gap-2 rounded-full bg-surface-100 py-1.5 pl-1.5 pr-3 hover:bg-surface-200"
-          >
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-gradient text-[11px] font-bold text-white">
-              {initials(user.name ?? "You")}
-            </span>
-            <span className="hidden text-sm font-semibold text-ink-800 sm:inline">
-              {(user.name ?? "You").split(" ")[0]}
-            </span>
-          </Link>
+          // <Link
+          //   href="/account"
+          //   className="inline-flex items-center gap-2 rounded-full bg-surface-100 py-1.5 pl-1.5 pr-3 hover:bg-surface-200"
+          // >
+          //   <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-gradient text-[11px] font-bold text-white">
+          //     {initials(user.name ?? "You")}
+          //   </span>
+            // <span className="hidden text-sm font-semibold text-ink-800 sm:inline">
+            //   {(user.name ?? "You").split(" ")[0]}
+            // </span>
+          // </Link>
+          <StudentMenuDrawer userName={user.name ?? "You"} />
         ) : (
           <Link
             href="/login"

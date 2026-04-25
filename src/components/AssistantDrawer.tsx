@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { LifeBuoy, LogOut, Menu, MessageCircle, Send, Sparkles, UserCircle2, X } from "lucide-react";
+import { LogoutButton } from "./LogoutButton";
 
 type Msg = { role: "user" | "assistant"; content: string };
 
@@ -244,5 +246,95 @@ export function AssistantDrawer() {
         </div>
       )}
     </>
+  );
+}
+
+export function StudentMenuDrawer({ userName }: { userName: string }) {
+  const [open, setOpen] = useState(false);
+  const firstName = userName.split(" ")[0] || "You";
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setOpen(false);
+    }
+
+    function onMouseDown(event: MouseEvent) {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+
+    if (open) {
+      window.addEventListener("keydown", onKeyDown);
+      window.addEventListener("mousedown", onMouseDown);
+    }
+
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("mousedown", onMouseDown);
+    };
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Open account menu"
+        className="inline-flex items-center justify-center rounded-full border border-ink-800/10 bg-white p-2 text-ink-800 hover:bg-surface-100"
+      >
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-gradient text-[11px] font-bold text-white">
+          {firstName.slice(0, 1).toUpperCase()}
+        </span>
+      </button>
+
+      {open && (
+        <aside className="absolute right-0 top-[calc(100%+0.5rem)] z-50 flex w-[240px] flex-col rounded-2xl bg-white shadow-xl ring-1 ring-ink-800/10">
+            <header className="flex items-center justify-between border-b border-ink-800/5 px-4 py-3">
+              <div>
+                <div className="text-sm font-semibold text-ink-900">{firstName}</div>
+                <div className="text-xs text-ink-500">Menu</div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label="Close"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-surface-100 text-ink-700 hover:bg-surface-200"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+
+            <nav className="flex-1 p-2">
+              <Link
+                href="/"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-800 hover:bg-surface-100"
+              >
+                <UserCircle2 className="h-4 w-4" />
+                My Account
+              </Link>
+
+              <Link
+                // href="mailto:support@learnnextdoor.com?subject=LearnNextDoor%20Support"
+                href="/"
+                onClick={() => setOpen(false)}
+                className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-800 hover:bg-surface-100"
+              >
+                <LifeBuoy className="h-4 w-4" />
+                Contact Us
+              </Link>
+              <LogoutButton>
+                <span className="mt-1 flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-800 hover:bg-surface-100">
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </span>
+              </LogoutButton>
+            </nav>
+          </aside>
+      )}
+    </div>
   );
 }

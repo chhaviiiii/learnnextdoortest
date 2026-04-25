@@ -31,39 +31,39 @@ export function BookClassForm({
   const batch = batches.find((b) => b.id === batchId);
   const whatsappUrl = buildWhatsAppUrl(providerPhone, classTitle, providerName, batch?.name);
 
-  async function book() {
-    if (!batch) return;
-    setBusy(true);
-    setErr(null);
-    try {
-      const r = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ classId, batchId, mode }),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(j.error ?? "Booking failed");
-      }
-      router.push("/my-bookings?just=1");
-      router.refresh();
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setBusy(false);
-    }
-  }
+  // async function book() {
+  //   if (!batch) return;
+  //   setBusy(true);
+  //   setErr(null);
+  //   try {
+  //     const r = await fetch("/api/bookings", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ classId, batchId, mode }),
+  //     });
+  //     if (!r.ok) {
+  //       const j = await r.json().catch(() => ({}));
+  //       throw new Error(j.error ?? "Booking failed");
+  //     }
+  //     router.push("/my-bookings?just=1");
+  //     router.refresh();
+  //   } catch (e: any) {
+  //     setErr(e.message);
+  //   } finally {
+  //     setBusy(false);
+  //   }
+  // }
 
   if (!loggedIn) {
     return (
       <div className="mt-4 space-y-2">
         {whatsappUrl ? (
           <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn-accent w-full">
-            Enquire on WhatsApp
+            I'm interested
           </a>
         ) : (
           <Link href="/login?redirect=/class/" className="btn-accent w-full">
-            Enquire on WhatsApp
+            I'm interested
           </Link>
         )}
         <p className="text-center text-xs text-ink-500">
@@ -111,7 +111,7 @@ export function BookClassForm({
         </div>
       )}
 
-      <button
+      {/* <button
         onClick={book}
         disabled={busy || !batch || batch.spots === 0}
         className="btn-accent w-full"
@@ -126,7 +126,16 @@ export function BookClassForm({
       </button>
       <p className="text-center text-[11px] text-ink-500">
         You won't be charged now — payment is collected after your first session.
-      </p>
+      </p> */}
+      {whatsappUrl ? (
+        <a href={whatsappUrl} target="_blank" rel="noreferrer" className="btn-accent w-full">
+          I'm interested
+        </a>
+      ) : (
+        <Link href="/login?redirect=/class/" className="btn-accent w-full">
+          I'm interested
+        </Link>
+      )}
     </div>
   );
 }

@@ -69,6 +69,17 @@ export function LoginForm({ redirect, role }: { redirect: string; role: "STUDENT
           </p>
         </div>
 
+        <button
+          type="button"
+          disabled
+          className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-ink-800/10 bg-white px-3 py-3 text-sm font-semibold text-ink-400"
+        >
+          <span className="flex h-6 w-6 items-center justify-center rounded-full border border-ink-800/10 text-sm font-bold text-brand-700">
+            G
+          </span>
+          Continue with Google
+        </button>
+
         <div className="grid grid-cols-3 gap-2">
           <ChannelButton label="Email" active={channel === "email"} onClick={() => setChannel("email")} icon={<Mail className="h-4 w-4" />} />
           <ChannelButton label="WhatsApp" soon active={false} onClick={() => {}} icon={<MessageSquare className="h-4 w-4" />} />
