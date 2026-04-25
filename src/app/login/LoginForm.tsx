@@ -77,7 +77,7 @@ export function LoginForm({ redirect, role }: { redirect: string; role: "STUDENT
           <span className="flex h-6 w-6 items-center justify-center rounded-full border border-ink-800/10 text-sm font-bold text-brand-700">
             G
           </span>
-          Continue with Google
+          Login with Google
         </button>
 
         <div className="grid grid-cols-3 gap-2">

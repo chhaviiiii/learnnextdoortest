@@ -309,7 +309,7 @@ export function StudentMenuDrawer({ userName }: { userName: string }) {
 
             <nav className="flex-1 p-2">
               <Link
-                href="/"
+                href="/account"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-ink-800 hover:bg-surface-100"
               >

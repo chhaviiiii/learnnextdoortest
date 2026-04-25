@@ -23,7 +23,8 @@ export default function LoginPage({
             </p>
             <ul className="mt-6 space-y-2 text-sm text-ink-600">
               <li>✓ Instant OTP — no password to remember</li>
-              <li>✓ Your bookings, everywhere</li>
+              {/* <li>✓ Your bookings, everywhere</li> */}
+              <li>✓ Personalised learning experience</li>
               <li>✓ Teaching instead? <Link href="/provider/login" className="font-semibold text-brand-600 hover:underline">Provider login →</Link></li>
             </ul>
           </div>
