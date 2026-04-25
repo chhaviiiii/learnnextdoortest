@@ -5,6 +5,7 @@ import {
   BookOpenCheck,
   Calendar,
   Flag,
+  FolderTree,
   LayoutList,
   LifeBuoy,
   ScrollText,
@@ -65,21 +66,29 @@ export default async function AdminHomePage() {
       urgent: pendingKycProviders + pendingKycInstructors > 0,
       tint: "brand",
     },
-    {
-      href: "/admin/listings/live",
-      label: "Listing Approvals",
-      icon: BookOpenCheck,
-      count: pendingListings,
-      countLabel: "awaiting review",
-      urgent: pendingListings > 5,
-      tint: "accent",
-    },
+    // {
+    //   href: "/admin/listings/live",
+    //   label: "Listing Approvals",
+    //   icon: BookOpenCheck,
+    //   count: pendingListings,
+    //   countLabel: "awaiting review",
+    //   urgent: pendingListings > 5,
+    //   tint: "accent",
+    // },
     {
       href: "/admin/listings",
       label: "Listing Management",
       icon: LayoutList,
       count: activeListings,
       countLabel: "live listings",
+      tint: "ink",
+    },
+    {
+      href: "/admin/category",
+      label: "Categories & Subcategories",
+      icon: FolderTree,
+      count: 7,
+      countLabel: "Categories · 29 Sub-Categories",
       tint: "ink",
     },
     {
@@ -90,15 +99,15 @@ export default async function AdminHomePage() {
       countLabel: `active · ${suspendedUsers} suspended`,
       tint: "brand",
     },
-    {
-      href: "/admin/payments",
-      label: "Payments",
-      icon: Wallet,
-      count: pendingSettlements + queuedRefunds,
-      countLabel: `pending · ${failedSettlements} failed`,
-      urgent: failedSettlements > 0,
-      tint: "accent",
-    },
+    // {
+    //   href: "/admin/payments",
+    //   label: "Payments",
+    //   icon: Wallet,
+    //   count: pendingSettlements + queuedRefunds,
+    //   countLabel: `pending · ${failedSettlements} failed`,
+    //   urgent: failedSettlements > 0,
+    //   tint: "accent",
+    // },
     {
       href: "/admin/concerns",
       label: "Provider Concerns",
@@ -142,11 +151,11 @@ export default async function AdminHomePage() {
       message: `${overdueConcerns} provider concern${overdueConcerns === 1 ? "" : "s"} open > 72 hours.`,
       href: "/admin/concerns",
     });
-  if (failedSettlements > 0)
-    alerts.push({
-      message: `${failedSettlements} settlement${failedSettlements === 1 ? "" : "s"} failed — retry or contact provider.`,
-      href: "/admin/payments",
-    });
+  // if (failedSettlements > 0)
+  //   alerts.push({
+  //     message: `${failedSettlements} settlement${failedSettlements === 1 ? "" : "s"} failed — retry or contact provider.`,
+  //     href: "/admin/payments",
+  //   });
 
   return (
     <div className="space-y-6">
