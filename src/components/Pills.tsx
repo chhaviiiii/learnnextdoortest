@@ -57,3 +57,14 @@ export function StatusPill({ status }: { status: string }) {
     </span>
   );
 }
+
+export function LiveStatusPill({ status }: { status: string }) {
+  const map: Record<string, { cls: string; label: string }> = {
+    APPROVED: { cls: "bg-emerald-50 text-emerald-700", label: "Live" },
+    PENDING_APPROVAL: { cls: "bg-amber-50 text-amber-700", label: "Awaiting review" },
+    REJECTED: { cls: "bg-rose-50 text-rose-700", label: "Rejected" },
+    BLOCKED: { cls: "bg-ink-800 text-white", label: "Blocked" },
+  };
+  const item = map[status] ?? { cls: "bg-surface-200 text-ink-600", label: status };
+  return <span className={cn("pill", item.cls)}>{item.label}</span>;
+}

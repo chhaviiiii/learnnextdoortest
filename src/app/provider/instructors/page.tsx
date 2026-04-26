@@ -6,6 +6,12 @@ export default async function InstructorsPage() {
   const { provider } = await requireProvider();
   const instructors = await prisma.instructor.findMany({
     where: { providerId: provider.id },
+    include: {
+      batches: {
+        where: { class: { status: "ACTIVE" } },
+        select: { id: true },
+      },
+    },
     orderBy: { createdAt: "desc" },
   });
   return (
@@ -17,6 +23,7 @@ export default async function InstructorsPage() {
         phone: i.phone ?? "",
         specialty: i.specialty ?? "",
         kycStatus: i.kycStatus,
+        activeListings: i.batches.length,
       }))}
     />
   );

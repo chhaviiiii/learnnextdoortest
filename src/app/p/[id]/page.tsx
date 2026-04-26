@@ -12,7 +12,7 @@ export default async function ProviderProfilePage({ params }: { params: { id: st
     where: { id: params.id },
     include: {
       classes: {
-        where: { status: "ACTIVE" },
+        where: { status: "ACTIVE", liveStatus: "APPROVED" },
         include: { batches: true, provider: true },
         orderBy: { createdAt: "desc" }
       },

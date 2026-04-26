@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     classId,
     name,
     classDaysCsv,
+    startDate,
     fromTime,
     toTime,
     pricePer4Weeks,
@@ -17,6 +18,7 @@ export async function POST(req: Request) {
     freeTrialEnabled,
     freeTrialSessions,
     instructorId,
+    imageUrl,
   } = body ?? {};
 
   if (!classId || !name) {
@@ -47,6 +49,7 @@ export async function POST(req: Request) {
       classId,
       name: String(name),
       classDaysCsv: classDaysCsv ?? "",
+      startDate: startDate ? new Date(startDate) : null,
       fromTime: fromTime ?? "09:00",
       toTime: toTime ?? "10:00",
       pricePer4Weeks: Number(pricePer4Weeks ?? 0),
@@ -54,6 +57,7 @@ export async function POST(req: Request) {
       freeTrialEnabled: !!freeTrialEnabled,
       freeTrialSessions: Number(freeTrialSessions ?? 0),
       instructorId: instructorId || null,
+      imageUrl: imageUrl || null,
     },
   });
 

@@ -94,6 +94,8 @@ model Class {
   type            String // REGULAR | COURSE | WORKSHOP
   category        String
   subcategory     String?
+  address         String?
+  landmark        String?
   // categoryId      String?      // Relation with Category Table
   // categoryRef     Category?    @relation("ClassCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   // subcategoryId   String?      // Relation with Sub-Category Table
@@ -110,8 +112,13 @@ model Class {
   liveDecidedBy   String? // AdminUser.id
   liveReason      String? // rejection/block reason
   startDate       DateTime?
+  registrationEndDate DateTime?
+  endDate         DateTime?
   durationWeeks   Int?
   earlyBird       Boolean      @default(false)
+  earlyBirdEndDate DateTime?
+  earlyBirdPrice Int?
+  earlyBirdSlots Int?
   rating          Float?
   reviewsCount    Int          @default(0)
   createdAt       DateTime     @default(now())
@@ -132,6 +139,7 @@ model Batch {
   instructor        Instructor? @relation(fields: [instructorId], references: [id])
   name              String
   classDaysCsv      String?   // "Mon,Wed,Fri"
+  startDate         DateTime?
   fromTime          String    // "07:00"
   toTime            String    // "08:00"
   pricePer4Weeks    Int
@@ -139,6 +147,7 @@ model Batch {
   enrolled          Int         @default(0)
   freeTrialEnabled  Boolean     @default(false)
   freeTrialSessions Int         @default(0)
+  imageUrl          String?
   createdAt         DateTime    @default(now())
 
   bookings      Booking[]

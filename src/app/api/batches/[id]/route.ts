@@ -26,6 +26,7 @@ export async function PATCH(
   const {
     name,
     classDaysCsv,
+    startDate,
     fromTime,
     toTime,
     pricePer4Weeks,
@@ -33,6 +34,7 @@ export async function PATCH(
     freeTrialEnabled,
     freeTrialSessions,
     instructorId,
+    imageUrl,
   } = body ?? {};
 
   // If maxStudents is being lowered, make sure we're not going below current enrolled.
@@ -61,6 +63,7 @@ export async function PATCH(
     data: {
       ...(name !== undefined && { name: String(name) }),
       ...(classDaysCsv !== undefined && { classDaysCsv: String(classDaysCsv) }),
+      ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
       ...(fromTime !== undefined && { fromTime: String(fromTime) }),
       ...(toTime !== undefined && { toTime: String(toTime) }),
       ...(pricePer4Weeks !== undefined && { pricePer4Weeks: Number(pricePer4Weeks) }),
@@ -68,6 +71,7 @@ export async function PATCH(
       ...(freeTrialEnabled !== undefined && { freeTrialEnabled: !!freeTrialEnabled }),
       ...(freeTrialSessions !== undefined && { freeTrialSessions: Number(freeTrialSessions) }),
       ...(instructorId !== undefined && { instructorId: instructorId || null }),
+      ...(imageUrl !== undefined && { imageUrl: imageUrl || null }),
     },
   });
 

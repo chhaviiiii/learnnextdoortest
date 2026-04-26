@@ -7,7 +7,26 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
   const i = await prisma.instructor.findFirst({ where: { id: params.id, providerId: provider.id } });
   if (!i) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Detach from any batches first
+  const activeAssignments = await prisma.batch.findMany({
+    where: {
+      instructorId: params.id,
+      class: { providerId: provider.id, status: "ACTIVE" },
+    },
+    include: { class: { select: { title: true } } },
+    take: 3,
+  });
+  if (activeAssignments.length > 0) {
+    const titles = activeAssignments.map((b) => b.class.title).join(", ");
+    return NextResponse.json(
+      {
+        error: `This instructor is assigned to ${activeAssignments.length} active listing${
+          activeAssignments.length === 1 ? "" : "s"
+        }: ${titles}. Reassign before removing.`,
+      },
+      { status: 400 },
+    );
+  }
+
   await prisma.batch.updateMany({
     where: { instructorId: params.id },
     data: { instructorId: null },

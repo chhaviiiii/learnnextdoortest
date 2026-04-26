@@ -11,8 +11,13 @@ import { BookClassForm } from "./BookClassForm";
 import { ReviewForm } from "./ReviewForm";
 
 export default async function ClassPage({ params }: { params: { id: string } }) {
-  const cls = await prisma.class.findUnique({
-    where: { id: params.id },
+  const cls = await prisma.class.findFirst({
+    where: {
+      id: params.id,
+      status: "ACTIVE",
+      liveStatus: "APPROVED",
+      provider: { kycStatus: "VERIFIED" },
+    },
     include: {
       provider: { include: { user: true } },
       batches: { include: { instructor: true }, orderBy: { createdAt: "asc" } },
@@ -41,13 +46,15 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
   const primary = images[0] ?? "https://images.unsplash.com/photo-1513258496099-48168024aec0?w=1600";
   const hasTrial = cls.batches.some((b) => b.freeTrialEnabled);
   const tags = parseCsv(cls.tagsCsv);
+  const subcategories = parseCsv(cls.subcategory);
   const lowest = cls.batches.length ? Math.min(...cls.batches.map((b) => b.pricePer4Weeks)) : 0;
   const providerLocation = cls?.provider?.area;
-  const validAddress = cls?.provider?.address && cls.provider.address !== "..." ? cls.provider.address : null;
+  const validAddress =
+    cls.address ||
+    (cls?.provider?.address && cls.provider.address !== "..." ? cls.provider.address : null);
   const mapQuery = encodeURIComponent(validAddress ?? providerLocation ?? "Delhi");
 
   const mapEmbedUrl = `https://www.google.com/maps?q=${mapQuery}&output=embed`;
-  const mapOpenUrl = `https://www.google.com/maps/search/?api=1&query=${mapQuery}`;
 
   return (
     <>
@@ -106,6 +113,12 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               </div>
               <span>·</span>
               <span>{cls.category}</span>
+              {subcategories.length > 0 && (
+                <>
+                  <span>·</span>
+                  <span>{subcategories.slice(0, 2).join(" / ")}</span>
+                </>
+              )}
               <span>·</span>
               <div className="inline-flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
@@ -130,6 +143,20 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               </p>
             </section>
 
+            {typeHasDates(cls.type) && (
+              <section className="mt-8 grid gap-3 sm:grid-cols-3">
+                {cls.registrationEndDate && (
+                  <InfoTile label="Registration closes" value={formatDate(cls.registrationEndDate, { day: "2-digit", month: "short", year: "numeric" })} />
+                )}
+                {cls.startDate && (
+                  <InfoTile label={cls.type === "WORKSHOP" ? "Workshop date" : "Starts"} value={formatDate(cls.startDate, { day: "2-digit", month: "short", year: "numeric" })} />
+                )}
+                {cls.endDate && (
+                  <InfoTile label="Ends" value={formatDate(cls.endDate, { day: "2-digit", month: "short", year: "numeric" })} />
+                )}
+              </section>
+            )}
+
             {/* Batches */}
             <section className="mt-10">
               <h2 className="font-display text-xl font-bold text-ink-900">
@@ -140,14 +167,25 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                   // const spotsLeft = Math.max(0, b.maxStudents - b.enrolled);
                   return (
                     <div key={b.id} className="card flex flex-wrap items-center justify-between gap-4 p-5 sm:p-6">
-                      <div>
+                      {b.imageUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={b.imageUrl} alt="" className="h-20 w-24 rounded-2xl object-cover ring-1 ring-ink-800/5" />
+                      )}
+                      <div className="min-w-0 flex-1">
                         <div className="font-display text-base font-bold text-ink-900">
                           {b.name}
                         </div>
                         <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-ink-500">
-                          <span className="inline-flex items-center gap-1">
-                            <CalendarRange className="h-3.5 w-3.5" /> {b.classDaysCsv?.split(",").join(" · ")}
-                          </span>
+                          {b.startDate && (
+                            <span className="inline-flex items-center gap-1">
+                              <CalendarRange className="h-3.5 w-3.5" /> Starts {formatDate(b.startDate)}
+                            </span>
+                          )}
+                          {b.classDaysCsv && (
+                            <span className="inline-flex items-center gap-1">
+                              <CalendarRange className="h-3.5 w-3.5" /> {b.classDaysCsv.split(",").join(" · ")}
+                            </span>
+                          )}
                           <span className="inline-flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" /> {b.fromTime} – {b.toTime}
                           </span>
@@ -241,7 +279,16 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
                         : "One-time workshop"}
                   </div>
                 </div>
-                {cls.earlyBird && <EarlyBirdPill />}
+                {cls.earlyBird && (
+                  <div className="text-right">
+                    <EarlyBirdPill />
+                    {cls.earlyBirdPrice && (
+                      <div className="mt-1 text-xs font-semibold text-amber-700">
+                        {formatINR(cls.earlyBirdPrice)}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <BookClassForm
@@ -289,7 +336,8 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               </p>
               <div className="mt-3 text-xs text-ink-500">
                 <MapPin className="mr-1 inline-block h-3 w-3" />
-                {cls.provider.address ?? cls.provider.area ?? "Delhi"}
+                {cls.address ?? cls.provider.address ?? cls.provider.area ?? "Delhi"}
+                {cls.landmark ? ` · ${cls.landmark}` : ""}
               </div>
             </Link>
 
@@ -308,7 +356,7 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
               <div className="px-2 py-3">
                 <span className="inline-flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 text-sm font-semibold text-ink-800">
                   <MapPin className="h-4 w-4 text-brand-600" />
-                  {providerLocation ?? "Delhi"}
+                  {cls.landmark ?? providerLocation ?? "Delhi"}
                 </span>
               </div>
             </div>
@@ -319,4 +367,17 @@ export default async function ClassPage({ params }: { params: { id: string } }) 
       <StudentFooter />
     </>
   );
+}
+
+function InfoTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-white p-4 ring-1 ring-ink-800/5">
+      <div className="text-[10px] font-semibold uppercase tracking-wide text-ink-500">{label}</div>
+      <div className="mt-1 text-sm font-bold text-ink-900">{value}</div>
+    </div>
+  );
+}
+
+function typeHasDates(type: string) {
+  return type === "COURSE" || type === "WORKSHOP";
 }

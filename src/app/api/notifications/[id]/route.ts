@@ -25,20 +25,3 @@ export async function PATCH(
   });
   return NextResponse.json({ ok: true, notification: updated });
 }
-
-// DELETE /api/notifications/[id]
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  const user = await requireUser();
-  const notif = await prisma.notification.findFirst({
-    where: { id: params.id, userId: user.id },
-    select: { id: true },
-  });
-  if (!notif) {
-    return NextResponse.json({ error: "Notification not found" }, { status: 404 });
-  }
-  await prisma.notification.delete({ where: { id: params.id } });
-  return NextResponse.json({ ok: true });
-}

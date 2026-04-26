@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Check, Trash2 } from "lucide-react";
+import { Check } from "lucide-react";
 
 export function NotificationRow({
   notification,
@@ -29,17 +29,6 @@ export function NotificationRow({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ read: true }),
       });
-      startTransition(() => router.refresh());
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function remove() {
-    if (!confirm("Delete this notification?")) return;
-    setBusy(true);
-    try {
-      await fetch(`/api/notifications/${notification.id}`, { method: "DELETE" });
       startTransition(() => router.refresh());
     } finally {
       setBusy(false);
@@ -82,14 +71,6 @@ export function NotificationRow({
             <Check className="h-4 w-4" />
           </button>
         )}
-        <button
-          onClick={remove}
-          disabled={busy}
-          title="Delete"
-          className="rounded-lg p-1.5 text-ink-500 hover:bg-surface-100 hover:text-rose-600"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
       </div>
     </div>
   );

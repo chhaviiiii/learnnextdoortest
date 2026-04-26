@@ -7,6 +7,7 @@ type Batch = {
   id: string;
   name: string;
   classDaysCsv: string | null;
+  startDate: string;
   fromTime: string;
   toTime: string;
   pricePer4Weeks: number;
@@ -15,6 +16,7 @@ type Batch = {
   freeTrialEnabled: boolean;
   freeTrialSessions: number;
   instructorId: string | null;
+  imageUrl: string | null;
 };
 
 type Instructor = { id: string; name: string };
@@ -203,6 +205,7 @@ function BatchEditor({
   const [form, setForm] = useState({
     name: batch?.name ?? "",
     classDaysCsv: batch?.classDaysCsv ?? "",
+    startDate: batch?.startDate ?? "",
     fromTime: batch?.fromTime ?? "18:00",
     toTime: batch?.toTime ?? "19:00",
     pricePer4Weeks: batch?.pricePer4Weeks ?? 2000,
@@ -210,6 +213,7 @@ function BatchEditor({
     freeTrialEnabled: batch?.freeTrialEnabled ?? true,
     freeTrialSessions: batch?.freeTrialSessions ?? 1,
     instructorId: batch?.instructorId ?? "",
+    imageUrl: batch?.imageUrl ?? "",
   });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -299,6 +303,16 @@ function BatchEditor({
         </div>
       </div>
 
+      <div>
+        <label className="block text-[11px] font-semibold text-ink-700">Start date</label>
+        <input
+          type="date"
+          className="input mt-1"
+          value={form.startDate}
+          onChange={(e) => setForm({ ...form, startDate: e.target.value })}
+        />
+      </div>
+
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="block text-[11px] font-semibold text-ink-700">From</label>
@@ -362,6 +376,16 @@ function BatchEditor({
           </select>
         </div>
       )}
+
+      <div>
+        <label className="block text-[11px] font-semibold text-ink-700">Batch image URL</label>
+        <input
+          className="input mt-1"
+          value={form.imageUrl}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+          placeholder="/uploads/classes/image.jpg"
+        />
+      </div>
 
       <label className="flex items-center gap-2 text-xs text-ink-700">
         <input

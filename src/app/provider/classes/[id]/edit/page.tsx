@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { StatusPill, TypePill } from "@/components/Pills";
+import { LiveStatusPill, StatusPill, TypePill } from "@/components/Pills";
 import { formatDate } from "@/lib/utils";
 import { EditClassForm } from "./EditClassForm";
 import { BatchManager } from "./BatchManager";
@@ -38,25 +38,43 @@ export default async function EditClassPage({ params }: { params: { id: string }
           <div className="flex flex-wrap items-center gap-2">
             <TypePill type={cls.type} />
             <StatusPill status={cls.status} />
+            <LiveStatusPill status={cls.liveStatus} />
           </div>
           <h1 className="mt-2 font-display text-3xl font-bold text-ink-900">{cls.title}</h1>
           <p className="mt-1 text-sm text-ink-500">{cls.category}</p>
         </div>
-        <Link href={`/class/${cls.id}`} className="btn-ghost">
-          Preview public page →
-        </Link>
+        {cls.status === "ACTIVE" && cls.liveStatus === "APPROVED" ? (
+          <Link href={`/class/${cls.id}`} className="btn-ghost" target="_blank">
+            View live page →
+          </Link>
+        ) : (
+          <span className="rounded-xl bg-surface-100 px-4 py-2.5 text-sm font-semibold text-ink-500 ring-1 ring-ink-800/10">
+            Not live yet
+          </span>
+        )}
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <EditClassForm
           initial={{
             id: cls.id,
+            type: cls.type,
             title: cls.title,
             description: cls.description ?? "",
             category: cls.category,
+            subcategory: cls.subcategory ?? "",
             tagsCsv: cls.tagsCsv ?? "",
             imagesCsv: cls.imagesCsv ?? "",
+            address: cls.address ?? "",
+            landmark: cls.landmark ?? "",
+            registrationEndDate: cls.registrationEndDate?.toISOString().slice(0, 10) ?? "",
+            startDate: cls.startDate?.toISOString().slice(0, 10) ?? "",
+            endDate: cls.endDate?.toISOString().slice(0, 10) ?? "",
+            durationWeeks: cls.durationWeeks ?? 0,
             earlyBird: cls.earlyBird,
+            earlyBirdEndDate: cls.earlyBirdEndDate?.toISOString().slice(0, 10) ?? "",
+            earlyBirdPrice: cls.earlyBirdPrice ?? 0,
+            earlyBirdSlots: cls.earlyBirdSlots ?? 0,
           }}
         />
 
@@ -69,6 +87,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
               id: b.id,
               name: b.name,
               classDaysCsv: b.classDaysCsv,
+              startDate: b.startDate?.toISOString().slice(0, 10) ?? "",
               fromTime: b.fromTime,
               toTime: b.toTime,
               pricePer4Weeks: b.pricePer4Weeks,
@@ -77,6 +96,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
               freeTrialEnabled: b.freeTrialEnabled,
               freeTrialSessions: b.freeTrialSessions,
               instructorId: b.instructorId,
+              imageUrl: b.imageUrl,
             }))}
           />
 

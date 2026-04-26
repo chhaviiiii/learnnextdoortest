@@ -16,6 +16,13 @@ export async function POST(req: Request) {
   if (!batch || batch.classId !== classId) {
     return NextResponse.json({ error: "Invalid batch" }, { status: 400 });
   }
+  if (
+    batch.class.status !== "ACTIVE" ||
+    batch.class.liveStatus !== "APPROVED" ||
+    batch.class.provider.kycStatus !== "VERIFIED"
+  ) {
+    return NextResponse.json({ error: "This class is not currently accepting bookings" }, { status: 400 });
+  }
   if (batch.enrolled >= batch.maxStudents) {
     return NextResponse.json({ error: "This batch is sold out" }, { status: 400 });
   }

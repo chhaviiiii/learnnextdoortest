@@ -12,6 +12,7 @@ type Instructor = {
   phone: string;
   specialty: string;
   kycStatus: string;
+  activeListings: number;
 };
 
 export function InstructorsClient({ instructors }: { instructors: Instructor[] }) {
@@ -39,7 +40,12 @@ export function InstructorsClient({ instructors }: { instructors: Instructor[] }
 
   async function remove(id: string) {
     if (!confirm("Remove this instructor?")) return;
-    await fetch(`/api/instructors/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/instructors/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error ?? "Could not remove instructor.");
+      return;
+    }
     router.refresh();
   }
 
@@ -105,6 +111,9 @@ export function InstructorsClient({ instructors }: { instructors: Instructor[] }
               <div className="mt-4 space-y-1 text-xs text-ink-500">
                 {i.phone && <div>📞 {i.phone}</div>}
                 {i.email && <div>✉️ {i.email}</div>}
+                <div>
+                  {i.activeListings} active listing{i.activeListings === 1 ? "" : "s"}
+                </div>
               </div>
               <div className="mt-3 flex items-center justify-between">
                 <KycPill status={i.kycStatus} />

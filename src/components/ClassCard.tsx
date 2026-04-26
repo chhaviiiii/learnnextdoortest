@@ -11,7 +11,9 @@ type ClassCardProps = {
     category: string;
     imagesCsv: string | null;
     earlyBird: boolean;
+    earlyBirdPrice?: number | null;
     startDate: Date | null;
+    registrationEndDate?: Date | null;
     durationWeeks: number | null;
     rating: number | null;
     reviewsCount: number;
@@ -81,6 +83,11 @@ export function ClassCard({ cls }: ClassCardProps) {
                 <CalendarRange className="h-3 w-3" /> {formatDate(cls.startDate)}
               </div>
             )}
+            {cls.earlyBird && cls.earlyBirdPrice ? (
+              <div className="text-[11px] font-semibold text-amber-700">
+                Early bird {priceLabel(cls.type, cls.earlyBirdPrice)}
+              </div>
+            ) : null}
           </div>
           <span className="text-xs font-semibold text-brand-600 opacity-0 transition group-hover:opacity-100">
             View →
