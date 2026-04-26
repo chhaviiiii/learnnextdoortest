@@ -88,6 +88,11 @@ export function AdminShell({ admin, children }: { admin: AdminCtx; children: Rea
 
   const isActive = (href: string) =>
     href === "/admin" ? pathname === "/admin" : pathname.startsWith(href);
+  const visibleNav = NAV.map((group) => ({
+    ...group,
+    items: group.items.filter((it) => !it.superOnly || admin.role === "SUPER_ADMIN"),
+  })).filter((group) => group.items.length > 0);
+  const mobileNav = visibleNav.flatMap((group) => group.items);
 
   return (
     <div className="flex min-h-screen bg-surface-50">
@@ -106,14 +111,13 @@ export function AdminShell({ admin, children }: { admin: AdminCtx; children: Rea
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 space-y-4">
-          {NAV.map((group) => (
+          {visibleNav.map((group) => (
             <div key={group.group}>
               <div className="px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-ink-500/80">
                 {group.group}
               </div>
               <ul className="space-y-0.5">
                 {group.items
-                  .filter((it) => !it.superOnly || admin.role === "SUPER_ADMIN")
                   .map((it) => {
                     const Icon = it.icon;
                     const active = isActive(it.href);
@@ -172,7 +176,53 @@ export function AdminShell({ admin, children }: { admin: AdminCtx; children: Rea
           </div>
         </div>
       </aside>
-      <main className="flex-1 min-w-0 p-6 md:p-8">{children}</main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex min-h-16 items-center gap-3 border-b border-ink-800/5 bg-white/95 px-4 py-2 backdrop-blur md:hidden">
+          <Link href="/admin" className="flex min-w-0 items-center gap-2">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-brand-600 font-display text-sm font-bold text-white">
+              LND
+            </div>
+            <div className="min-w-0">
+              <div className="truncate font-display text-sm font-bold leading-none text-ink-900">Admin Portal</div>
+              <div className="mt-0.5 truncate text-[11px] font-semibold uppercase tracking-wider text-brand-600">
+                {admin.role === "SUPER_ADMIN" ? "Super Admin" : "Admin"}
+              </div>
+            </div>
+          </Link>
+          <button
+            onClick={logout}
+            disabled={loggingOut}
+            className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-surface-100 text-ink-700 hover:bg-surface-200 disabled:opacity-60"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </header>
+
+        <main className="min-w-0 flex-1 p-4 pb-28 sm:p-6 sm:pb-28 md:p-8">{children}</main>
+      </div>
+
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-ink-800/10 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_-22px_rgba(48,28,128,0.45)] backdrop-blur md:hidden">
+        <div className="no-scrollbar flex gap-1 overflow-x-auto">
+          {mobileNav.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex min-w-[76px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[10px] font-semibold transition",
+                  active ? "bg-brand-50 text-brand-700" : "text-ink-600 hover:bg-surface-100",
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="max-w-[70px] truncate">{item.label.replace(" Management", "").replace(" Approvals", "")}</span>
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }

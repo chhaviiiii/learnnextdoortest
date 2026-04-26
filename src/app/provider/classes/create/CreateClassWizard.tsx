@@ -17,20 +17,6 @@ import {
 } from "lucide-react";
 
 type ClassType = "REGULAR" | "COURSE" | "WORKSHOP";
-
-const CATEGORIES: Record<string, string[]> = {
-  Dance: ["Classical", "Bharatanatyam", "Kathak", "Hip-Hop", "Jazz", "Salsa", "Contemporary", "Bollywood"],
-  Music: ["Guitar", "Piano", "Vocals", "Tabla", "Drums", "Violin", "Keyboard"],
-  Sports: ["Football", "Cricket", "Badminton", "Skating", "Martial Arts", "Swimming"],
-  "Arts & Crafts": ["Drawing", "Painting", "Pottery", "Calligraphy", "Origami", "Mixed Media"],
-  "Academic Tutoring": ["Math", "Science", "English", "Accounts", "Economics", "Olympiad"],
-  Language: ["English", "Hindi", "French", "Spanish", "German", "Sanskrit"],
-  "Wellness & Yoga": ["Hatha Yoga", "Meditation", "Pilates", "Pranayama", "Prenatal Yoga"],
-  "Coding & Tech": ["Scratch", "Python", "Web Development", "Robotics", "App Development", "AI Basics"],
-  Cooking: ["Baking", "Indian", "Italian", "Healthy Cooking", "Kids Cooking"],
-  Theatre: ["Acting", "Voice", "Improv", "Stagecraft", "Public Speaking"],
-  Other: ["General", "Kids", "Adults", "Weekend", "Beginner"],
-};
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 type Batch = {
@@ -54,7 +40,15 @@ type EarlyBird = {
   slots: number;
 };
 
-export function CreateClassWizard({ instructors }: { instructors: { id: string; name: string }[] }) {
+type TaxonomyItem = { name: string; subcategories: string[] };
+
+export function CreateClassWizard({
+  instructors,
+  taxonomy,
+}: {
+  instructors: { id: string; name: string }[];
+  taxonomy: TaxonomyItem[];
+}) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [busy, setBusy] = useState(false);
@@ -63,7 +57,7 @@ export function CreateClassWizard({ instructors }: { instructors: { id: string; 
 
   const [type, setType] = useState<ClassType>("REGULAR");
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Dance");
+  const [category, setCategory] = useState(taxonomy[0]?.name ?? "");
   const [subcategories, setSubcategories] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState("");
@@ -84,8 +78,8 @@ export function CreateClassWizard({ instructors }: { instructors: { id: string; 
   const [agreed, setAgreed] = useState(false);
 
   const [batches, setBatches] = useState<Batch[]>([defaultBatch("Morning Beginners")]);
-  const categoryOptions = Object.keys(CATEGORIES);
-  const subcategoryOptions = CATEGORIES[category] ?? [];
+  const categoryOptions = taxonomy.map((item) => item.name);
+  const subcategoryOptions = taxonomy.find((item) => item.name === category)?.subcategories ?? [];
   const schedule = batches[0] ?? defaultBatch(type === "WORKSHOP" ? "Workshop session" : "Course cohort");
 
   const selectedPrice = useMemo(() => {
@@ -144,6 +138,7 @@ export function CreateClassWizard({ instructors }: { instructors: { id: string; 
 
   function validateBasics() {
     if (title.trim().length < 3) return "Class title must be at least 3 characters.";
+    if (!category) return "Choose a category.";
     if (description.trim().length < 50) return "Description must be at least 50 characters.";
     if (!address.trim()) return "Address is required.";
     if (!landmark.trim()) return "Landmark is required.";

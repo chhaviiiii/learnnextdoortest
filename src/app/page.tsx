@@ -8,28 +8,22 @@ import { ClassCard } from "@/components/ClassCard";
 import { AssistantDrawer } from "@/components/AssistantDrawer";
 import { HomeHeroSearch } from "@/components/HomeHeroSearch";
 import { prisma } from "@/lib/prisma";
-
-const CATEGORIES = [
-  { name: "Dance", emoji: "💃", hue: "from-pink-100 to-pink-50" },
-  { name: "Music", emoji: "🎸", hue: "from-violet-100 to-violet-50" },
-  { name: "Art", emoji: "🎨", hue: "from-amber-100 to-amber-50" },
-  { name: "Coding", emoji: "💻", hue: "from-sky-100 to-sky-50" },
-  { name: "Yoga", emoji: "🧘", hue: "from-emerald-100 to-emerald-50" },
-  { name: "Cooking", emoji: "🍳", hue: "from-orange-100 to-orange-50" },
-  { name: "Fitness", emoji: "💪", hue: "from-rose-100 to-rose-50" },
-  { name: "Chess", emoji: "♟️", hue: "from-slate-100 to-slate-50" },
-];
+import { getCategoryTaxonomy } from "@/lib/taxonomy";
 
 export default async function HomePage() {
-  const classes = await prisma.class.findMany({
-    where: { status: "ACTIVE", liveStatus: "APPROVED" },
-    include: {
-      provider: true,
-      batches: true,
-    },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-  });
+  const [classes, taxonomy] = await Promise.all([
+    prisma.class.findMany({
+      where: { status: "ACTIVE", liveStatus: "APPROVED" },
+      include: {
+        provider: true,
+        batches: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    }),
+    getCategoryTaxonomy(),
+  ]);
+  const categories = taxonomy.slice(0, 8);
 
   return (
     <>
@@ -92,13 +86,13 @@ export default async function HomePage() {
           </Link>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <Link
               key={c.name}
               href={`/browse?category=${encodeURIComponent(c.name)}`}
-              className={`group flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-b ${c.hue} p-4 ring-1 ring-ink-800/5 transition hover:-translate-y-0.5 hover:shadow-card`}
+              className={`group flex flex-col items-center gap-2 rounded-2xl bg-gradient-to-b ${c.hue ?? "from-surface-100 to-white"} p-4 ring-1 ring-ink-800/5 transition hover:-translate-y-0.5 hover:shadow-card`}
             >
-              <span className="text-3xl transition group-hover:scale-110">{c.emoji}</span>
+              <span className="text-3xl transition group-hover:scale-110">{c.icon ?? "•"}</span>
               <span className="text-xs font-semibold text-ink-800">{c.name}</span>
             </Link>
           ))}

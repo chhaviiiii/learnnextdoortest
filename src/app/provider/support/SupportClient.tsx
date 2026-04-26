@@ -4,8 +4,6 @@ import { useState } from "react";
 import { LifeBuoy, Plus, MessageCircle, Mail } from "lucide-react";
 import { StatusPill } from "@/components/Pills";
 
-const CATEGORIES = ["Payouts", "Bookings", "KYC", "Classes", "Technical", "Other"];
-
 type Ticket = {
   id: string;
   code: string;
@@ -17,10 +15,19 @@ type Ticket = {
   createdAt: string;
 };
 
-export function SupportClient({ tickets }: { tickets: Ticket[] }) {
+export function SupportClient({
+  tickets,
+  categories,
+  contact,
+}: {
+  tickets: Ticket[];
+  categories: string[];
+  contact: { whatsapp: string; email: string; helpCentreLabel: string };
+}) {
   const router = useRouter();
   const [show, setShow] = useState(false);
-  const [form, setForm] = useState({ subject: "", category: "Payouts", message: "" });
+  const defaultCategory = categories[0] ?? "Other";
+  const [form, setForm] = useState({ subject: "", category: defaultCategory, message: "" });
   const [busy, setBusy] = useState(false);
 
   async function submit() {
@@ -31,7 +38,7 @@ export function SupportClient({ tickets }: { tickets: Ticket[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
-      setForm({ subject: "", category: "Payouts", message: "" });
+      setForm({ subject: "", category: defaultCategory, message: "" });
       setShow(false);
       router.refresh();
     } finally {
@@ -54,9 +61,9 @@ export function SupportClient({ tickets }: { tickets: Ticket[] }) {
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <ContactCard icon={MessageCircle} title="WhatsApp" text="+91 90000 00000" />
-        <ContactCard icon={Mail} title="Email" text="support@learnnextdoor.in" />
-        <ContactCard icon={LifeBuoy} title="Help centre" text="Open KB →" />
+        <ContactCard icon={MessageCircle} title="WhatsApp" text={contact.whatsapp} />
+        <ContactCard icon={Mail} title="Email" text={contact.email} />
+        <ContactCard icon={LifeBuoy} title="Help centre" text={contact.helpCentreLabel} />
       </div>
 
       {show && (
@@ -68,7 +75,7 @@ export function SupportClient({ tickets }: { tickets: Ticket[] }) {
             </Field>
             <Field label="Category">
               <select className="input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+                {categories.map((c) => <option key={c}>{c}</option>)}
               </select>
             </Field>
           </div>

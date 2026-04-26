@@ -5,6 +5,7 @@ import { Trash2 } from "lucide-react";
 
 export function EditClassForm({
   initial,
+  taxonomy,
 }: {
   initial: {
     id: string;
@@ -26,6 +27,7 @@ export function EditClassForm({
     earlyBirdPrice: number;
     earlyBirdSlots: number;
   };
+  taxonomy: { name: string; subcategories: string[] }[];
 }) {
   const router = useRouter();
   const [form, setForm] = useState(initial);
@@ -63,6 +65,19 @@ export function EditClassForm({
     setForm({ ...form, [k]: v });
   }
 
+  const subcategoryOptions = taxonomy.find((item) => item.name === form.category)?.subcategories ?? [];
+  const selectedSubcategories = form.subcategory
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  function toggleSubcategory(value: string) {
+    const next = selectedSubcategories.includes(value)
+      ? selectedSubcategories.filter((item) => item !== value)
+      : [...selectedSubcategories, value];
+    upd("subcategory", next.join(","));
+  }
+
   return (
     <div className="card space-y-5">
       <h2 className="font-display text-lg font-bold text-ink-900">Edit class details</h2>
@@ -72,11 +87,35 @@ export function EditClassForm({
       </Field>
 
       <Field label="Category">
-        <input className="input" value={form.category} onChange={(e) => upd("category", e.target.value)} />
+        <select
+          className="input"
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value, subcategory: "" })}
+        >
+          {taxonomy.map((item) => (
+            <option key={item.name}>{item.name}</option>
+          ))}
+        </select>
       </Field>
 
       <Field label="Subcategories">
-        <input className="input" value={form.subcategory} onChange={(e) => upd("subcategory", e.target.value)} />
+        <div className="flex flex-wrap gap-2">
+          {subcategoryOptions.map((item) => {
+            const on = selectedSubcategories.includes(item);
+            return (
+              <button
+                key={item}
+                type="button"
+                onClick={() => toggleSubcategory(item)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold ring-1 ${
+                  on ? "bg-ink-800 text-white ring-ink-800" : "bg-white text-ink-700 ring-ink-800/10 hover:bg-surface-100"
+                }`}
+              >
+                {item}
+              </button>
+            );
+          })}
+        </div>
       </Field>
 
       <Field label="Tags">

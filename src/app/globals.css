@@ -11,6 +11,7 @@ body {
   background: #fafaff;
   color: #1a1340;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 @layer components {
@@ -39,7 +40,7 @@ body {
   }
 
   .card {
-    @apply rounded-3xl bg-white p-6 shadow-card ring-1 ring-ink-800/5;
+    @apply rounded-2xl bg-white p-4 shadow-card ring-1 ring-ink-800/5 sm:rounded-3xl sm:p-6;
   }
 
   .pill {
@@ -49,6 +50,14 @@ body {
   .badge {
     @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold;
   }
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* Gradient logo text */

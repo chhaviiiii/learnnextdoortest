@@ -15,7 +15,7 @@ import {
 import { prisma } from "@/lib/prisma";
 
 export default async function AdminHomePage() {
-  // Pull all the counts we need for the 9 cards + critical alerts in one round-trip
+  // Keep count queries inside one transaction so Supabase session pool limits are not hit.
   const [
     pendingKycProviders,
     pendingKycInstructors,
@@ -28,7 +28,7 @@ export default async function AdminHomePage() {
     queuedRefunds,
     activeUsers,
     suspendedUsers,
-  ] = await Promise.all([
+  ] = await prisma.$transaction([
     prisma.provider.count({ where: { kycStatus: "PENDING" } }),
     prisma.instructor.count({ where: { kycStatus: "PENDING" } }),
     prisma.class.count({ where: { liveStatus: "PENDING_APPROVAL" } }),

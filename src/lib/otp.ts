@@ -2,19 +2,28 @@
  * OTP adapter.
  *
  * Email OTP delivery is wired through Resend (https://resend.com).
- * SMS and WhatsApp channels are stubbed — plug in Twilio or MSG91 later.
+ * SMS OTP delivery is wired through Twilio Programmable Messaging.
+ * WhatsApp OTP can also use Twilio if TWILIO_WHATSAPP_FROM is configured.
  *
  * Delivery mode selection:
- *   - If OTP_DEV_MODE === "true" (explicit) OR RESEND_API_KEY is missing → dev mode
- *     (print to server console and also return devCode in the /api/auth/send-otp response).
- *   - Otherwise → real delivery via Resend.
+ *   - OTP_DEV_MODE=true  → local-only dev mode for every channel.
+ *   - Any other value    → real delivery for every channel, with a clear error if
+ *                          that channel's provider env vars are missing.
  *
  * Required env vars for real email delivery:
  *   RESEND_API_KEY   — e.g. "re_xxxxxxxxxxxx"
  *   EMAIL_FROM       — e.g. "LearnNextDoor <noreply@yourdomain.com>"
  *                     MUST be a verified sender in Resend, OR "onboarding@resend.dev"
  *                     for pre-domain-verification testing.
+ *
+ * Required env vars for real SMS delivery:
+ *   TWILIO_ACCOUNT_SID
+ *   TWILIO_API_KEY_SID + TWILIO_API_KEY_SECRET preferred for production
+ *   TWILIO_AUTH_TOKEN fallback for local/testing
+ *   TWILIO_SMS_FROM   — Twilio phone number in E.164 format, e.g. "+15551234567"
  */
+
+import type { OtpChannel } from "@/lib/identifiers";
 
 export function generateOtp(length = 6) {
   let code = "";
@@ -22,18 +31,16 @@ export function generateOtp(length = 6) {
   return code;
 }
 
-export function isDevMode() {
-  if (process.env.OTP_DEV_MODE === "true") return true;
-  if (!process.env.RESEND_API_KEY) return true;
-  return false;
+export function isDevMode(channel: OtpChannel = "email") {
+  return process.env.OTP_DEV_MODE === "true";
 }
 
 export async function deliverOtp(
-  channel: "whatsapp" | "sms" | "email",
+  channel: OtpChannel,
   identifier: string,
   code: string
 ) {
-  if (isDevMode()) {
+  if (isDevMode(channel)) {
     // eslint-disable-next-line no-console
     console.log(
       `\n===== [DEV] OTP ${channel.toUpperCase()} → ${identifier} =====\n  ${code}\n===== expires in 10 min =====\n`
@@ -80,16 +87,69 @@ async function sendEmail(email: string, code: string) {
   return { ok: true as const, dev: false as const, providerId: data.id };
 }
 
-async function sendWhatsApp(_phone: string, _code: string): Promise<never> {
-  throw new Error(
-    "WhatsApp OTP is not yet configured. Use Email OTP for now, or wire up Twilio WhatsApp and redeploy."
-  );
+async function sendWhatsApp(phone: string, code: string) {
+  const from = process.env.TWILIO_WHATSAPP_FROM;
+  if (!from) {
+    throw new Error("TWILIO_WHATSAPP_FROM is not set. Add it to your .env / Vercel env vars.");
+  }
+  return sendTwilioMessage(`whatsapp:${phone}`, from, otpText(code));
 }
 
-async function sendSms(_phone: string, _code: string): Promise<never> {
-  throw new Error(
-    "SMS OTP is not yet configured. Use Email OTP for now, or wire up Twilio / MSG91 and redeploy."
-  );
+async function sendSms(phone: string, code: string) {
+  const from = process.env.TWILIO_SMS_FROM;
+  if (!from) {
+    throw new Error("TWILIO_SMS_FROM is not set. Add it to your .env / Vercel env vars.");
+  }
+  return sendTwilioMessage(phone, from, otpText(code));
+}
+
+async function sendTwilioMessage(to: string, from: string, body: string) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const auth = twilioAuthHeader();
+  if (!sid || !auth) {
+    throw new Error(
+      "Twilio SMS requires TWILIO_ACCOUNT_SID, TWILIO_SMS_FROM, and either TWILIO_API_KEY_SID/TWILIO_API_KEY_SECRET or TWILIO_AUTH_TOKEN.",
+    );
+  }
+
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    method: "POST",
+    headers: {
+      Authorization: auth,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ To: to, From: from, Body: body }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    // eslint-disable-next-line no-console
+    console.error("[OTP] Twilio API error:", res.status, text);
+    throw new Error(`SMS delivery failed (${res.status}). Check your Twilio sender, credentials, and recipient format.`);
+  }
+
+  const data = (await res.json().catch(() => ({}))) as { sid?: string };
+  return { ok: true as const, dev: false as const, providerId: data.sid };
+}
+
+function twilioAuthHeader() {
+  const apiKeySid = process.env.TWILIO_API_KEY_SID;
+  const apiKeySecret = process.env.TWILIO_API_KEY_SECRET;
+  if (apiKeySid && apiKeySecret) {
+    return `Basic ${Buffer.from(`${apiKeySid}:${apiKeySecret}`).toString("base64")}`;
+  }
+
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  if (accountSid && authToken) {
+    return `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString("base64")}`;
+  }
+
+  return null;
+}
+
+function otpText(code: string) {
+  return `Your LearnNextDoor verification code is ${code}. It expires in 10 minutes.`;
 }
 
 function emailTemplate(code: string) {

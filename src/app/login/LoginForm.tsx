@@ -7,7 +7,7 @@ type Channel = "whatsapp" | "sms" | "email";
 
 export function LoginForm({ redirect, role }: { redirect: string; role: "STUDENT" | "PROVIDER" }) {
   const [step, setStep] = useState<"identify" | "otp">("identify");
-  // Email is the only live channel for now — WhatsApp/SMS are labelled "soon" in the UI.
+  // Email and SMS are live channels; WhatsApp stays gated until a sender is configured.
   const [channel, setChannel] = useState<Channel>("email");
   const [identifier, setIdentifier] = useState("");
   const [name, setName] = useState("");
@@ -72,7 +72,7 @@ export function LoginForm({ redirect, role }: { redirect: string; role: "STUDENT
         <div className="grid grid-cols-3 gap-2">
           <ChannelButton label="Email" active={channel === "email"} onClick={() => setChannel("email")} icon={<Mail className="h-4 w-4" />} />
           <ChannelButton label="WhatsApp" soon active={false} onClick={() => {}} icon={<MessageSquare className="h-4 w-4" />} />
-          <ChannelButton label="SMS" soon active={false} onClick={() => {}} icon={<Phone className="h-4 w-4" />} />
+          <ChannelButton label="SMS" active={channel === "sms"} onClick={() => setChannel("sms")} icon={<Phone className="h-4 w-4" />} />
         </div>
 
         <div>
@@ -136,7 +136,7 @@ export function LoginForm({ redirect, role }: { redirect: string; role: "STUDENT
         value={otp}
         onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
         placeholder="••••••"
-        className="input text-center text-2xl tracking-[0.5em] font-mono"
+        className="input text-center font-mono text-xl tracking-[0.35em] sm:text-2xl sm:tracking-[0.5em]"
         inputMode="numeric"
         autoFocus
       />
@@ -168,7 +168,7 @@ function ChannelButton({ label, active, onClick, icon, soon }: any) {
     <button
       onClick={onClick}
       disabled={!!soon}
-      title={soon ? "Coming soon — use Email for now" : undefined}
+      title={soon ? "Coming soon" : undefined}
       className={`relative flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold ring-1 transition ${
         soon
           ? "bg-white text-ink-400 ring-ink-800/10 cursor-not-allowed"

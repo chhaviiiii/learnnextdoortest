@@ -10,14 +10,14 @@ export default async function ProviderLoginPage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-brand-50 via-surface-100 to-accent-50/40">
-      <div className="mx-auto flex min-h-screen max-w-[1080px] items-center justify-center px-6 py-12">
-        <div className="grid w-full items-center gap-10 md:grid-cols-2">
+      <div className="mx-auto flex min-h-screen max-w-[1080px] items-center justify-center px-4 py-8 sm:px-6 sm:py-12">
+        <div className="grid w-full items-center gap-6 md:grid-cols-2 md:gap-10">
           <div>
             <Logo />
             <span className="mt-6 inline-block rounded-full bg-white/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-brand-700 ring-1 ring-brand-200">
               Provider Portal
             </span>
-            <h1 className="mt-4 font-display text-4xl font-extrabold leading-tight text-ink-900">
+            <h1 className="mt-4 font-display text-3xl font-extrabold leading-tight text-ink-900 sm:text-4xl">
               Your teaching, organised.
             </h1>
             <p className="mt-3 text-sm text-ink-500">

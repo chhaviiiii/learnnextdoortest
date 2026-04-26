@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getCategoryTaxonomy } from "@/lib/taxonomy";
 import { LiveStatusPill, StatusPill, TypePill } from "@/components/Pills";
 import { formatDate } from "@/lib/utils";
 import { EditClassForm } from "./EditClassForm";
@@ -9,7 +10,7 @@ import { BatchManager } from "./BatchManager";
 
 export default async function EditClassPage({ params }: { params: { id: string } }) {
   const { provider } = await requireProvider();
-  const [cls, instructors] = await Promise.all([
+  const [cls, instructors, taxonomy] = await Promise.all([
     prisma.class.findFirst({
       where: { id: params.id, providerId: provider.id },
       include: {
@@ -22,6 +23,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    getCategoryTaxonomy(),
   ]);
   if (!cls) return notFound();
 
@@ -76,6 +78,10 @@ export default async function EditClassPage({ params }: { params: { id: string }
             earlyBirdPrice: cls.earlyBirdPrice ?? 0,
             earlyBirdSlots: cls.earlyBirdSlots ?? 0,
           }}
+          taxonomy={taxonomy.map((item) => ({
+            name: item.name,
+            subcategories: item.subcategories,
+          }))}
         />
 
         <aside className="space-y-4">

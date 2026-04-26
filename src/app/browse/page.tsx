@@ -4,6 +4,7 @@ import { ClassCard } from "@/components/ClassCard";
 import { AssistantDrawer } from "@/components/AssistantDrawer";
 import { FilterSidebar, FilterMobileButton } from "@/components/FilterSidebar";
 import { prisma } from "@/lib/prisma";
+import { getCategoryTaxonomy } from "@/lib/taxonomy";
 import Link from "next/link";
 
 const TYPES = [
@@ -12,8 +13,6 @@ const TYPES = [
   { value: "WORKSHOP", label: "Workshop" },
   { value: "COURSE", label: "Course" },
 ];
-
-const CATEGORIES = ["Dance", "Music", "Art", "Coding", "Yoga", "Cooking", "Fitness", "Chess"];
 
 type SortKey = "" | "distance" | "price_asc" | "price_desc";
 
@@ -38,39 +37,43 @@ export default async function BrowsePage({
     .map((s) => s.trim())
     .filter(Boolean);
 
-  const classes = await prisma.class.findMany({
-    where: {
-      status: "ACTIVE",
-      liveStatus: "APPROVED",
-      ...(type && { type }),
-      ...(selectedCategories.length > 0 && { category: { in: selectedCategories } }),
-      ...(q && {
-        OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { description: { contains: q, mode: "insensitive" } },
-          { category: { contains: q, mode: "insensitive" } },
-          { subcategory: { contains: q, mode: "insensitive" } },
-          { tagsCsv: { contains: q, mode: "insensitive" } },
-          { provider: { instituteName: { contains: q, mode: "insensitive" } } },
-          { provider: { area: { contains: q, mode: "insensitive" } } },
-          { provider: { address: { contains: q, mode: "insensitive" } } },
-          {
-            batches: {
-              some: {
-                OR: [
-                  { name: { contains: q, mode: "insensitive" } },
-                  { classDaysCsv: { contains: q, mode: "insensitive" } },
-                  { instructor: { is: { name: { contains: q, mode: "insensitive" } } } },
-                ],
+  const [taxonomy, classes] = await Promise.all([
+    getCategoryTaxonomy(),
+    prisma.class.findMany({
+      where: {
+        status: "ACTIVE",
+        liveStatus: "APPROVED",
+        ...(type && { type }),
+        ...(selectedCategories.length > 0 && { category: { in: selectedCategories } }),
+        ...(q && {
+          OR: [
+            { title: { contains: q, mode: "insensitive" } },
+            { description: { contains: q, mode: "insensitive" } },
+            { category: { contains: q, mode: "insensitive" } },
+            { subcategory: { contains: q, mode: "insensitive" } },
+            { tagsCsv: { contains: q, mode: "insensitive" } },
+            { provider: { instituteName: { contains: q, mode: "insensitive" } } },
+            { provider: { area: { contains: q, mode: "insensitive" } } },
+            { provider: { address: { contains: q, mode: "insensitive" } } },
+            {
+              batches: {
+                some: {
+                  OR: [
+                    { name: { contains: q, mode: "insensitive" } },
+                    { classDaysCsv: { contains: q, mode: "insensitive" } },
+                    { instructor: { is: { name: { contains: q, mode: "insensitive" } } } },
+                  ],
+                },
               },
             },
-          },
-        ],
-      }),
-    },
-    include: { provider: true, batches: true },
-    orderBy: { createdAt: "desc" },
-  });
+          ],
+        }),
+      },
+      include: { provider: true, batches: true },
+      orderBy: { createdAt: "desc" },
+    }),
+  ]);
+  const categories = taxonomy.map((item) => item.name);
 
   const sorted = applySort(classes, sort);
 
@@ -98,10 +101,10 @@ export default async function BrowsePage({
           </div>
         </div>
 
-        <FilterMobileButton types={TYPES} categories={CATEGORIES} />
+        <FilterMobileButton types={TYPES} categories={categories} />
 
         <div className="mt-5 grid gap-6 sm:mt-6 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <FilterSidebar types={TYPES} categories={CATEGORIES} />
+          <FilterSidebar types={TYPES} categories={categories} />
 
           <div>
             {sorted.length === 0 ? (

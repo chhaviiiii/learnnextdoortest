@@ -63,13 +63,14 @@ export function HomeHeroSearch() {
           setValue(e.target.value);
         }}
         placeholder="Try 'guitar', 'pottery', 'chess for kids'..."
-        className="w-full rounded-2xl bg-white py-4 pl-12 pr-32 text-sm text-ink-900 shadow-float ring-1 ring-ink-800/5 focus:outline-none focus:ring-2 focus:ring-brand-400"
+        className="w-full rounded-2xl bg-white py-4 pl-12 pr-14 text-sm text-ink-900 shadow-float ring-1 ring-ink-800/5 focus:outline-none focus:ring-2 focus:ring-brand-400 sm:pr-32"
       />
       <button
         type="submit"
-        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl bg-accent-gradient px-5 py-2.5 text-sm font-semibold text-white shadow hover:brightness-105"
+        className="absolute right-2 top-1/2 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-xl bg-accent-gradient text-sm font-semibold text-white shadow hover:brightness-105 sm:w-auto sm:px-5"
       >
-        Search
+        <Search className="h-4 w-4 sm:hidden" />
+        <span className="hidden sm:inline">Search</span>
       </button>
     </form>
   );

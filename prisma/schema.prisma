@@ -27,7 +27,7 @@ model User {
   suspended        Boolean   @default(false)
   suspendedAt      DateTime?
   suspensionReason String?
-  createdAt     DateTime  @default(now())
+  createdAt        DateTime  @default(now())
 
   bookings      Booking[]
   reviews       Review[]
@@ -83,52 +83,45 @@ model Instructor {
   batches Batch[]
 }
 
-
-
 model Class {
-  id              String       @id @default(cuid())
-  providerId      String
-  provider        Provider     @relation(fields: [providerId], references: [id])
-  title           String
-  description     String?
-  type            String // REGULAR | COURSE | WORKSHOP
-  category        String
-  subcategory     String?
-  address         String?
-  landmark        String?
-  // categoryId      String?      // Relation with Category Table
-  // categoryRef     Category?    @relation("ClassCategory", fields: [categoryId], references: [id], onDelete: SetNull)
-  // subcategoryId   String?      // Relation with Sub-Category Table
-  // subcategoryRef  Subcategory? @relation("ClassSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
-  // broaderLocality String?      @db.VarChar(120)
-  tagsCsv         String?
-  imagesCsv       String?
-  status          String       @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | ARCHIVED
+  id                  String    @id @default(cuid())
+  providerId          String
+  provider            Provider  @relation(fields: [providerId], references: [id])
+  title               String
+  description         String?
+  type                String // REGULAR | COURSE | WORKSHOP
+  category            String
+  subcategory         String?
+  address             String?
+  landmark            String?
+  tagsCsv             String?
+  imagesCsv           String?
+  status              String    @default("ACTIVE") // ACTIVE | PAUSED | DRAFT | ARCHIVED
   // freeTrial       Boolean      @default(false)
   // trending        Boolean      @default(false)
-  liveStatus      String       @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | BLOCKED
-  liveSubmittedAt DateTime     @default(now())
-  liveDecidedAt   DateTime?
-  liveDecidedBy   String? // AdminUser.id
-  liveReason      String? // rejection/block reason
-  startDate       DateTime?
+  liveStatus          String    @default("PENDING_APPROVAL") // PENDING_APPROVAL | APPROVED | REJECTED | BLOCKED
+  liveSubmittedAt     DateTime  @default(now())
+  liveDecidedAt       DateTime?
+  liveDecidedBy       String? // AdminUser.id
+  liveReason          String? // rejection/block reason
+  startDate           DateTime?
   registrationEndDate DateTime?
-  endDate         DateTime?
-  durationWeeks   Int?
-  earlyBird       Boolean      @default(false)
-  earlyBirdEndDate DateTime?
-  earlyBirdPrice Int?
-  earlyBirdSlots Int?
-  rating          Float?
-  reviewsCount    Int          @default(0)
-  createdAt       DateTime     @default(now())
+  endDate             DateTime?
+  durationWeeks       Int?
+  earlyBird           Boolean   @default(false)
+  earlyBirdEndDate    DateTime?
+  earlyBirdPrice      Int?
+  earlyBirdSlots      Int?
+  rating              Float?
+  reviewsCount        Int       @default(0)
+  createdAt           DateTime  @default(now())
 
   batches       Batch[]
   reviews       Review[]
   bookings      Booking[]
   holidays      Holiday[]
   // carouselSlides CarouselSlide[]
-  cancellations  CancellationRequest[]
+  cancellations CancellationRequest[]
 }
 
 model Batch {
@@ -138,10 +131,10 @@ model Batch {
   instructorId      String?
   instructor        Instructor? @relation(fields: [instructorId], references: [id])
   name              String
-  classDaysCsv      String?   // "Mon,Wed,Fri"
+  classDaysCsv      String? // "Mon,Wed,Fri"
   startDate         DateTime?
-  fromTime          String    // "07:00"
-  toTime            String    // "08:00"
+  fromTime          String // "07:00"
+  toTime            String // "08:00"
   pricePer4Weeks    Int
   maxStudents       Int
   enrolled          Int         @default(0)
@@ -154,7 +147,6 @@ model Batch {
   holidays      Holiday[]
   cancellations CancellationRequest[]
 }
-
 
 model Booking {
   id            String    @id @default(cuid())
@@ -202,32 +194,36 @@ model Holiday {
   createdAt        DateTime @default(now())
 }
 
+model Category {
+  id           String   @id @default(cuid())
+  categoryCode String   @unique
+  name         String   @unique @db.VarChar(80)
+  icon         String?  @db.VarChar(20)
+  hue          String?  @db.VarChar(80)
+  active       Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-// model Category {
-//   id           String   @id @default(cuid())
-//   categoryCode String   @unique // e.g. CAT-001 (generated at app layer)
-//   name         String   @unique @db.VarChar(50)
-//   createdAt    DateTime @default(now())
-//   updatedAt    DateTime @updatedAt
+  subcategories Subcategory[]
 
-//   subcategories Subcategory[]
-//   classes       Class[]       @relation("ClassCategory")
-// }
+  @@index([active, displayOrder])
+}
 
-// model Subcategory {
-//   id              String   @id @default(cuid())
-//   subcategoryCode String   @unique // e.g. SUB-014 (generated at app layer)
-//   categoryId      String
-//   category        Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-//   name            String   @db.VarChar(75)
-//   createdAt       DateTime @default(now())
-//   updatedAt       DateTime @updatedAt
+model Subcategory {
+  id              String   @id @default(cuid())
+  subcategoryCode String   @unique
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name            String   @db.VarChar(80)
+  active          Boolean  @default(true)
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-//   classes Class[] @relation("ClassSubcategory")
-
-//   @@unique([categoryId, name])
-//   @@index([categoryId])
-// }
+  @@unique([categoryId, name])
+  @@index([categoryId, active, displayOrder])
+}
 
 // model CarouselSlide {
 //   id              String   @id @default(cuid())
@@ -303,7 +299,6 @@ model PlatformBankAccount {
   updatedAt DateTime @updatedAt
 }
 
-
 model CancellationRequest {
   id               String    @id @default(cuid())
   providerId       String
@@ -312,7 +307,7 @@ model CancellationRequest {
   class            Class     @relation(fields: [classId], references: [id])
   batchId          String?
   batch            Batch?    @relation(fields: [batchId], references: [id])
-  scope            String    // WORKSHOP | COURSE | BATCH
+  scope            String // WORKSHOP | COURSE | BATCH
   reason           String
   totalRefund      Int       @default(0)
   affectedBookings Int       @default(0)
@@ -324,16 +319,16 @@ model CancellationRequest {
 }
 
 model Refund {
-  id             String   @id @default(cuid())
+  id             String               @id @default(cuid())
   cancellationId String?
   cancellation   CancellationRequest? @relation(fields: [cancellationId], references: [id])
-  bookingId      String   @unique
-  booking        Booking  @relation(fields: [bookingId], references: [id])
+  bookingId      String               @unique
+  booking        Booking              @relation(fields: [bookingId], references: [id])
   amount         Int
-  method         String   @default("ORIGINAL") // ORIGINAL | UPI | MANUAL
-  status         String   @default("QUEUED")   // QUEUED | PROCESSING | COMPLETED | FAILED
+  method         String               @default("ORIGINAL") // ORIGINAL | UPI | MANUAL
+  status         String               @default("QUEUED") // QUEUED | PROCESSING | COMPLETED | FAILED
   utr            String?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime             @default(now())
   completedAt    DateTime?
 }
 
@@ -367,6 +362,17 @@ model SupportTicket {
   status         String    @default("OPEN") // OPEN | RESOLVED | CLOSED | MERGED
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
+}
+
+model SupportCategory {
+  id           String   @id @default(cuid())
+  name         String   @unique @db.VarChar(80)
+  active       Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active, displayOrder])
 }
 
 model Notification {

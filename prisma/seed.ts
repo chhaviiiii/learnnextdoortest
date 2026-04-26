@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
 import { PrismaClient } from "@prisma/client";
+import { DEFAULT_TAXONOMY } from "../src/lib/taxonomy-data";
+import { DEFAULT_SUPPORT_CATEGORIES } from "../src/lib/support-data";
 
 const prisma = new PrismaClient();
 
@@ -42,6 +44,7 @@ async function clean() {
   await prisma.otpCode.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.supportTicket.deleteMany();
+  await prisma.supportCategory.deleteMany();
   await prisma.settlement.deleteMany();
   await prisma.refund.deleteMany();
   await prisma.cancellationRequest.deleteMany();
@@ -50,15 +53,54 @@ async function clean() {
   await prisma.booking.deleteMany();
   await prisma.batch.deleteMany();
   await prisma.class.deleteMany();
+  await prisma.subcategory.deleteMany();
+  await prisma.category.deleteMany();
   await prisma.instructor.deleteMany();
   await prisma.provider.deleteMany();
   await prisma.authSession.deleteMany();
   await prisma.user.deleteMany();
 }
 
+async function seedTaxonomy() {
+  let subcategoryIndex = 1;
+  for (const [categoryIndex, item] of DEFAULT_TAXONOMY.entries()) {
+    const category = await prisma.category.create({
+      data: {
+        categoryCode: `CAT-${String(categoryIndex + 1).padStart(3, "0")}`,
+        name: item.name,
+        icon: item.icon,
+        hue: item.hue,
+        displayOrder: categoryIndex,
+      },
+    });
+
+    for (const [displayOrder, name] of item.subcategories.entries()) {
+      await prisma.subcategory.create({
+        data: {
+          subcategoryCode: `SUB-${String(subcategoryIndex).padStart(3, "0")}`,
+          categoryId: category.id,
+          name,
+          displayOrder,
+        },
+      });
+      subcategoryIndex += 1;
+    }
+  }
+}
+
+async function seedSupportCategories() {
+  for (const [displayOrder, name] of DEFAULT_SUPPORT_CATEGORIES.entries()) {
+    await prisma.supportCategory.create({
+      data: { name, displayOrder },
+    });
+  }
+}
+
 async function main() {
   console.log("🌱 Seeding LearnNextDoor…");
   await clean();
+  await seedTaxonomy();
+  await seedSupportCategories();
 
   // --- Users & Providers ---
   const providers = [

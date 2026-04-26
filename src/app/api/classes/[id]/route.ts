@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateCategorySelection } from "@/lib/taxonomy";
 
 async function owned(providerId: string, id: string) {
   const cls = await prisma.class.findFirst({ where: { id, providerId } });
@@ -42,17 +43,31 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
   }
 
+  let categoryPatch: { category?: string; subcategory?: string | null } = {};
+  if (category !== undefined || subcategory !== undefined) {
+    const categorySelection = await validateCategorySelection(
+      category !== undefined ? category : cls.category,
+      subcategory !== undefined ? subcategory : cls.subcategory,
+    );
+    if (!categorySelection.ok) {
+      return NextResponse.json({ error: categorySelection.error }, { status: 400 });
+    }
+    categoryPatch = {
+      category: categorySelection.category,
+      subcategory: categorySelection.subcategory || null,
+    };
+  }
+
   const updated = await prisma.class.update({
     where: { id: params.id },
     data: {
-      ...(title !== undefined && { title }),
-      ...(description !== undefined && { description }),
-      ...(category !== undefined && { category }),
-      ...(subcategory !== undefined && { subcategory }),
-      ...(tagsCsv !== undefined && { tagsCsv }),
-      ...(imagesCsv !== undefined && { imagesCsv }),
-      ...(address !== undefined && { address }),
-      ...(landmark !== undefined && { landmark }),
+      ...(title !== undefined && { title: String(title).trim() }),
+      ...(description !== undefined && { description: String(description).trim() }),
+      ...categoryPatch,
+      ...(tagsCsv !== undefined && { tagsCsv: tagsCsv ? String(tagsCsv).trim() : null }),
+      ...(imagesCsv !== undefined && { imagesCsv: imagesCsv ? String(imagesCsv).trim() : null }),
+      ...(address !== undefined && { address: String(address).trim() }),
+      ...(landmark !== undefined && { landmark: String(landmark).trim() }),
       ...(registrationEndDate !== undefined && { registrationEndDate: registrationEndDate ? new Date(registrationEndDate) : null }),
       ...(startDate !== undefined && { startDate: startDate ? new Date(startDate) : null }),
       ...(endDate !== undefined && { endDate: endDate ? new Date(endDate) : null }),

@@ -15,7 +15,7 @@ export function SignupForm() {
     address: "",
     upiId: "",
   });
-  // Email is the only live channel for now.
+  // Email and SMS are live channels; WhatsApp stays gated until a sender is configured.
   const [channel, setChannel] = useState<"whatsapp" | "sms" | "email">("email");
   const [otp, setOtp] = useState("");
   const [devCode, setDevCode] = useState<string | null>(null);
@@ -129,14 +129,14 @@ export function SignupForm() {
             <label className="block text-xs font-semibold text-ink-700">OTP channel</label>
             <div className="mt-2 grid grid-cols-3 gap-2">
               {(["email", "whatsapp", "sms"] as const).map((c) => {
-                const live = c === "email";
+                const live = c === "email" || c === "sms";
                 const active = channel === c;
                 return (
                   <button
                     key={c}
                     onClick={() => live && setChannel(c)}
                     disabled={!live}
-                    title={!live ? "Coming soon — use Email for now" : undefined}
+                    title={!live ? "Coming soon" : undefined}
                     className={`relative rounded-xl px-3 py-2.5 text-xs font-semibold ring-1 transition ${
                       !live
                         ? "bg-white text-ink-400 ring-ink-800/10 cursor-not-allowed"
@@ -182,7 +182,7 @@ export function SignupForm() {
           <input
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-            className="input text-center text-2xl font-mono tracking-[0.5em]"
+            className="input text-center font-mono text-xl tracking-[0.35em] sm:text-2xl sm:tracking-[0.5em]"
             placeholder="••••••"
             autoFocus
           />

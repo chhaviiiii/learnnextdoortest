@@ -1,6 +1,7 @@
 import { requireProvider } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { getCategoryTaxonomy } from "@/lib/taxonomy";
 import { CreateClassWizard } from "./CreateClassWizard";
 
 export default async function CreateClassPage() {
@@ -11,10 +12,13 @@ export default async function CreateClassPage() {
   if (provider.kycStatus === "NOT_UPLOADED" || provider.kycStatus === "REJECTED") {
     redirect("/provider/account?kyc=required");
   }
-  const instructors = await prisma.instructor.findMany({
-    where: { providerId: provider.id },
-    orderBy: { name: "asc" },
-  });
+  const [instructors, taxonomy] = await Promise.all([
+    prisma.instructor.findMany({
+      where: { providerId: provider.id },
+      orderBy: { name: "asc" },
+    }),
+    getCategoryTaxonomy(),
+  ]);
   return (
     <div className="max-w-4xl">
       <header>
@@ -26,6 +30,10 @@ export default async function CreateClassPage() {
       <div className="mt-8">
         <CreateClassWizard
           instructors={instructors.map((i) => ({ id: i.id, name: i.name }))}
+          taxonomy={taxonomy.map((item) => ({
+            name: item.name,
+            subcategories: item.subcategories,
+          }))}
         />
       </div>
     </div>

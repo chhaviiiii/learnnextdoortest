@@ -135,7 +135,7 @@ export function AccountClient({ user, provider, sessions }: Props) {
               <input className="input" value={u.email} onChange={(e) => setU({ ...u, email: e.target.value })} />
             </Field>
             <Field label="Phone">
-              <input className="input" value={u.phone} onChange={(e) => setU({ ...u, phone: e.target.value })} placeholder="10-digit mobile number" maxLength={10} />
+              <input className="input" value={u.phone} onChange={(e) => setU({ ...u, phone: e.target.value })} placeholder="+91 98xxxxxxxx" />
             </Field>
             <Field label="Area">
               <input className="input" value={p.area} onChange={(e) => setP({ ...p, area: e.target.value })} />

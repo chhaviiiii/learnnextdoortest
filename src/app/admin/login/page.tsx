@@ -12,7 +12,7 @@ export default async function AdminLoginPage() {
   if (existing) redirect("/admin");
 
   return (
-    <div className="min-h-screen bg-surface-50 flex items-center justify-center px-4">
+    <div className="flex min-h-screen items-center justify-center bg-surface-50 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-brand-600 text-white font-display font-bold text-2xl mb-4">

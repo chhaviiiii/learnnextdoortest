@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { generateOtp, deliverOtp, isDevMode } from "@/lib/otp";
+import { isOtpChannel, normalizeOtpIdentifier, normalizeOtpRole } from "@/lib/identifiers";
 
 // Simple DB-backed rate limiting (no Redis).
 // We count recent rows in the OtpCode table.
@@ -8,9 +9,6 @@ import { generateOtp, deliverOtp, isDevMode } from "@/lib/otp";
 //   - Per IP (tracked via synthetic marker rows prefixed `__ip:`): 10 sends / hour
 const MAX_PER_IDENTIFIER_10MIN = 3;
 const MAX_PER_IP_1HOUR = 10;
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_RE = /^\+?\d{8,15}$/;
 
 function clientIp(req: Request): string {
   const fwd = req.headers.get("x-forwarded-for");
@@ -25,22 +23,16 @@ export async function POST(req: Request) {
     if (!channel || !identifier) {
       return NextResponse.json({ error: "channel and identifier required" }, { status: 400 });
     }
-    if (!["whatsapp", "sms", "email"].includes(channel)) {
+    if (!isOtpChannel(channel)) {
       return NextResponse.json({ error: "Invalid channel" }, { status: 400 });
     }
 
-    // Validate identifier shape for the channel
-    const id = String(identifier).trim();
-    if (channel === "email") {
-      if (!EMAIL_RE.test(id)) {
-        return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
-      }
-    } else {
-      // whatsapp / sms
-      if (!PHONE_RE.test(id.replace(/\s+/g, ""))) {
-        return NextResponse.json({ error: "Please enter a valid phone number (with country code)." }, { status: 400 });
-      }
+    const normalizedRole = normalizeOtpRole(role);
+    const parsed = normalizeOtpIdentifier(channel, identifier);
+    if (!parsed.ok) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
     }
+    const id = parsed.value;
 
     // Admin-enforced blacklists — return a generic error so the UI doesn't reveal
     // that a specific identifier was banned (prevents enumeration).
@@ -53,14 +45,30 @@ export async function POST(req: Request) {
         );
       }
     } else {
-      const normPhone = id.replace(/\s+/g, "");
-      const blacklisted = await prisma.phoneBlacklist.findUnique({ where: { phone: normPhone } });
+      const blacklisted = await prisma.phoneBlacklist.findUnique({ where: { phone: id } });
       if (blacklisted) {
         return NextResponse.json(
           { error: "This number cannot be used to sign in. Contact support." },
           { status: 403 },
         );
       }
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: channel === "email" ? { email: id } : { phone: id },
+      include: { provider: true },
+    });
+    if (existingUser?.suspended) {
+      return NextResponse.json(
+        { error: "This account has been suspended. Contact support for assistance." },
+        { status: 403 },
+      );
+    }
+    if (normalizedRole === "PROVIDER" && existingUser?.role === "STUDENT" && !existingUser.provider) {
+      return NextResponse.json(
+        { error: "This login is already registered as a learner. Use a separate provider email/phone or contact support." },
+        { status: 409 },
+      );
     }
 
     const now = Date.now();
@@ -97,7 +105,7 @@ export async function POST(req: Request) {
           identifier: ipMarker,
           code: "000000",
           channel,
-          role: role ?? "STUDENT",
+          role: normalizedRole,
           expiresAt: new Date(now + 60 * 60 * 1000),
         },
       });
@@ -106,23 +114,33 @@ export async function POST(req: Request) {
     const code = generateOtp(6);
     const expiresAt = new Date(now + 10 * 60 * 1000);
 
-    await prisma.otpCode.create({
+    const otp = await prisma.otpCode.create({
       data: {
         identifier: id,
         code,
         channel,
-        role: role ?? "STUDENT",
+        role: normalizedRole,
         expiresAt,
       },
     });
 
-    await deliverOtp(channel as "email" | "whatsapp" | "sms", id, code);
+    try {
+      await deliverOtp(channel, id, code);
+    } catch (deliveryError) {
+      await prisma.otpCode
+        .update({
+          where: { id: otp.id },
+          data: { used: true, attempts: 5 },
+        })
+        .catch(() => null);
+      throw deliveryError;
+    }
 
     return NextResponse.json({
       ok: true,
       // Only leak the code back to the client when we're in dev mode
       // (no real delivery happened), so users aren't locked out during local dev.
-      devCode: isDevMode() ? code : undefined,
+      devCode: isDevMode(channel) ? code : undefined,
     });
   } catch (e: any) {
     // eslint-disable-next-line no-console

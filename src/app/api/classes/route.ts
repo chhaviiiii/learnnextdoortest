@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireProvider } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateCategorySelection } from "@/lib/taxonomy";
 
 export async function POST(req: Request) {
   const { provider } = await requireProvider();
@@ -46,6 +47,10 @@ export async function POST(req: Request) {
   }
   if (!address || !landmark) {
     return NextResponse.json({ error: "Address and landmark are required." }, { status: 400 });
+  }
+  const categorySelection = await validateCategorySelection(category, subcategory);
+  if (!categorySelection.ok) {
+    return NextResponse.json({ error: categorySelection.error }, { status: 400 });
   }
   const images = String(imagesCsv ?? "").split(",").map((item) => item.trim()).filter(Boolean);
   if (images.length < 3 || images.length > 5) {
@@ -111,15 +116,15 @@ export async function POST(req: Request) {
   const cls = await prisma.class.create({
     data: {
       providerId: provider.id,
-      title,
+      title: String(title).trim(),
       type,
-      category,
-      subcategory: subcategory ?? null,
-      description: description ?? null,
-      tagsCsv: tagsCsv ?? null,
+      category: categorySelection.category,
+      subcategory: categorySelection.subcategory || null,
+      description: String(description).trim(),
+      tagsCsv: tagsCsv ? String(tagsCsv).trim() : null,
       imagesCsv: imagesCsv ?? null,
-      address: address ?? null,
-      landmark: landmark ?? null,
+      address: String(address).trim(),
+      landmark: String(landmark).trim(),
       earlyBird: !!earlyBird,
       earlyBirdEndDate: earlyBirdEndDate ? new Date(earlyBirdEndDate) : null,
       earlyBirdPrice: earlyBirdPrice ? Number(earlyBirdPrice) : null,
